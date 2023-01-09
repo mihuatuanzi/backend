@@ -1,0 +1,6 @@
+version: "3.9"
+services:
+  app:
+    image: seanscraft/com.mihuatuanzi.www:dev
+    volumes:
+      - .:/home/app_user/app

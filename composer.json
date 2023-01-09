@@ -1,0 +1,14 @@
+{
+    "name": "mihuatuanzi/backend",
+    "description": "Mihuatuanzi project",
+    "type": "project",
+    "license": "GPL-3.0-only",
+    "authors": [
+        {
+            "name": "alex-1900",
+            "email": "omytty@126.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {}
+}
