@@ -4,3 +4,15 @@ services:
     image: seanscraft/com.mihuatuanzi.www:dev
     volumes:
       - .:/home/app_user/app
+  ingress:
+    environment:
+      APP_ENV: dev
+  cache:
+    hostname: backend.cache.mihuatuanzi.io
+    image: redis:latest
+    expose:
+      - 6379
+    volumes:
+      - cache:/data
+    networks:
+      - default

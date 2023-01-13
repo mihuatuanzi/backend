@@ -38,11 +38,24 @@ USER app_user
 
 WORKDIR /home/app_user/app
 
-COPY composer.json .
-COPY composer.lock .
+COPY composer.* symfony.* ./
 
-VOLUME vendor
+VOLUME /home/app_user/app/vendor/
+VOLUME /home/app_user/app/var/
 
-RUN set -ex && composer install --no-dev
+RUN set -eux && composer install --prefer-dist --no-dev --no-autoloader --no-scripts --no-progress \
+    && composer clear-cache;
 
 COPY . .
+
+
+FROM nginx:1.23.3-alpine AS ingress
+
+ENV NGINX_HOST=backend.ingress.mihuatuanzi.io
+ENV APP_ENV=prod
+
+COPY public /home/app_user/app/public
+COPY ingress/templates /etc/nginx/templates
+COPY ingress/nginx.conf /etc/nginx/nginx.conf
+
+WORKDIR /home/app_user/app

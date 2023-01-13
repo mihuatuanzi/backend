@@ -1,0 +1,25 @@
+server {
+    # listen 443 ssl http2;
+    listen 80;
+    server_name backend.ingress.mihuatuanzi.io;
+    index index.php;
+
+    client_max_body_size 1024M;
+    root /home/app_user/app/public;
+
+    location / {
+        try_files $uri /index.php$is_args$args;
+    }
+
+    location ~ \.php$ {
+        try_files $uri =404;
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;
+        resolver 127.0.0.11 valid=30s ipv6=off;
+        set $target backend.app.mihuatuanzi.io;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param SCRIPT_NAME $fastcgi_script_name;
+        fastcgi_index index.php;
+        fastcgi_pass $target:9000;
+    }
+}
