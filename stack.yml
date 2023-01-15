@@ -2,25 +2,32 @@ version: "3.9"
 services:
   app:
     hostname: backend.app.mihuatuanzi.io
-    image: seanscraft/com.mihuatuanzi.app:latest
+    image: seanscraft/com.mihuatuanzi.backend.app:latest
     build:
       context: .
       target: app
+    deploy:
+      update_config:
+        order: start-first
     depends_on:
       - cache
     environment:
       env: prod
     networks:
-      - default
+      - backend.mihuatuanzi.io
   ingress:
     hostname: backend.ingress.mihuatuanzi.io
-    image: seanscraft/com.mihuatuanzi.ingress:latest
+    image: seanscraft/com.mihuatuanzi.backend.ingress:latest
     build:
       context: .
       target: ingress
+    deploy:
+      update_config:
+        order: start-first
     expose:
       - "80"
     networks:
+      - backend.mihuatuanzi.io
       - default
 
 volumes:
@@ -28,6 +35,4 @@ volumes:
     driver: local
 
 networks:
-  default:
-    name: backend.mihuatuanzi.io
-    external: true
+  backend.mihuatuanzi.io:
