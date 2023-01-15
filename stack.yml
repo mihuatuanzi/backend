@@ -14,7 +14,7 @@ services:
     environment:
       env: prod
     networks:
-      - backend.mihuatuanzi.io
+      - backend_io
   ingress:
     hostname: backend.ingress.mihuatuanzi.io
     image: seanscraft/com.mihuatuanzi.backend.ingress:latest
@@ -27,7 +27,7 @@ services:
     expose:
       - "80"
     networks:
-      - backend.mihuatuanzi.io
+      - backend_io
       - default
 
 volumes:
@@ -35,4 +35,4 @@ volumes:
     driver: local
 
 networks:
-  backend.mihuatuanzi.io:
+  backend_io:

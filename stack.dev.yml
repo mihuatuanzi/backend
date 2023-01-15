@@ -15,4 +15,4 @@ services:
     volumes:
       - cache:/data
     networks:
-      - backend.mihuatuanzi.io
+      - backend_io
