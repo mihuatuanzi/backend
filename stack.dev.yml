@@ -4,7 +4,7 @@ services:
     image: seanscraft/com.mihuatuanzi.backend.app:dev
     volumes:
       - .:/home/app_user/app
-  ingress:
+  proxy:
     environment:
       APP_ENV: dev
   cache:

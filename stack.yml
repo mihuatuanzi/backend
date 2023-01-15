@@ -15,9 +15,9 @@ services:
       env: prod
     networks:
       - backend_io
-  ingress:
-    hostname: backend.ingress.mihuatuanzi.io
-    image: seanscraft/com.mihuatuanzi.backend.ingress:latest
+  proxy:
+    hostname: backend.proxy.mihuatuanzi.io
+    image: seanscraft/com.mihuatuanzi.backend.proxy:latest
     build:
       context: .
       target: ingress
