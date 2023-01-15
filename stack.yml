@@ -11,10 +11,6 @@ services:
         order: start-first
     depends_on:
       - cache
-    environment:
-      env: prod
-    networks:
-      - backend_io
   proxy:
     hostname: backend.proxy.mihuatuanzi.io
     image: seanscraft/com.mihuatuanzi.backend.proxy:latest
@@ -24,15 +20,3 @@ services:
     deploy:
       update_config:
         order: start-first
-    expose:
-      - "80"
-    networks:
-      - backend_io
-      - default
-
-volumes:
-  cache:
-    driver: local
-
-networks:
-  backend_io:

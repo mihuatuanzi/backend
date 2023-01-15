@@ -29,21 +29,22 @@ EXPOSE 9000
 
 
 FROM builder AS app
+#
+#RUN #set -ex && addgroup -g 1000 -S app_group \
+##    && addgroup --system docker \
+##    && adduser -G app_group -u 1000 -h /home/app_user --disabled-password --ingroup "docker" -S app_user
 
-RUN set -ex && addgroup -g 1000 -S app_group \
-    && addgroup --system docker \
-    && adduser -G app_group -u 1000 -h /home/app_user --disabled-password --ingroup "docker" -S app_user
+RUN usermod -u 1000 www-data && chown -R www-data:www-data /var/www
+USER www-data
 
-USER app_user
-
-WORKDIR /home/app_user/app
+WORKDIR /var/www/app
 
 COPY composer.* symfony.* ./
 
-VOLUME /home/app_user/app/vendor/
-VOLUME /home/app_user/app/var/
+VOLUME /var/www/app/var/
 
-RUN set -eux && composer install --prefer-dist --no-dev --no-autoloader --no-scripts --no-progress \
+RUN set -eux \
+    && composer install --prefer-dist --no-dev --optimize-autoloader --no-scripts --no-progress \
     && composer clear-cache;
 
 COPY . .
@@ -54,8 +55,8 @@ FROM nginx:1.23.3-alpine AS ingress
 ENV NGINX_HOST=backend.ingress.mihuatuanzi.io
 ENV APP_ENV=prod
 
-COPY public /home/app_user/app/public
+COPY public /var/www/app/public
 COPY ingress/templates /etc/nginx/templates
 COPY ingress/nginx.conf /etc/nginx/nginx.conf
 
-WORKDIR /home/app_user/app
+WORKDIR /var/www/app

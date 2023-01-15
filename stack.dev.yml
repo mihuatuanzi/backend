@@ -3,16 +3,13 @@ services:
   app:
     image: seanscraft/com.mihuatuanzi.backend.app:dev
     volumes:
-      - .:/home/app_user/app
-  proxy:
-    environment:
-      APP_ENV: dev
+      - .:/var/www/app
   cache:
     hostname: backend.cache.mihuatuanzi.io
     image: redis:latest
-    expose:
-      - 6379
     volumes:
       - cache:/data
-    networks:
-      - backend_io
+
+volumes:
+  cache:
+    driver: local
