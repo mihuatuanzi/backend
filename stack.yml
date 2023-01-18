@@ -20,3 +20,17 @@ services:
     deploy:
       update_config:
         order: start-first
+  database:
+    image: mariadb:10.10
+    hostname: backend.database.mihuatuanzi.io
+    volumes:
+      - mihuatuanzi_database_backend:/var/lib/mysql:rw
+    environment:
+      MARIADB_ROOT_PASSWORD: mihuatuanzi
+      MARIADB_DATABASE: mihuatuanzi_backend
+      MARIADB_USER: admin
+      MARIADB_PASSWORD: mihuatuanzi
+
+volumes:
+  mihuatuanzi_database_backend:
+    external: true

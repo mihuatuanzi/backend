@@ -4,11 +4,15 @@ services:
     image: seanscraft/com.mihuatuanzi.backend.app:dev
     volumes:
       - .:/var/www/app
+      - ./deploy/php/php-development.ini:/usr/local/etc/php/php.ini
   cache:
     hostname: backend.cache.mihuatuanzi.io
     image: redis:latest
     volumes:
       - cache:/data
+  database:
+    ports:
+      - "33000:3306"
 
 volumes:
   cache:
