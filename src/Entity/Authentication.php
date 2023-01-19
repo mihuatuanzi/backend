@@ -2,10 +2,11 @@
 
 namespace App\Entity;
 
-use App\Config\AuthCertType;
+use App\Config\AuthCredentialType;
 use App\Repository\AuthenticationRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: AuthenticationRepository::class)]
 #[ORM\UniqueConstraint(name: 'UNIQ_cert_type_key', columns: ['cert_type', 'cert_key'])]
@@ -20,11 +21,24 @@ class Authentication
     #[ORM\JoinColumn(name: 'user_id', nullable: false)]
     private User $user;
 
-    #[ORM\Column(type: Types::SMALLINT, enumType: AuthCertType::class)]
-    private AuthCertType $cert_type;
+    #[Assert\NotBlank(message: '值不能为空')]
+    #[Assert\Choice(choices: [
+        AuthCredentialType::Email,
+        AuthCredentialType::PhoneNumber,
+        AuthCredentialType::WechatOpenid,
+        AuthCredentialType::QQOpenid
+    ])]
+    #[ORM\Column(type: Types::SMALLINT, enumType: AuthCredentialType::class)]
+    private ?AuthCredentialType $credential_type;
 
+    #[Assert\NotBlank(message: '值不能为空')]
+    #[Assert\Length(max: 128)]
+    #[Assert\When(
+        expression: 'this.isCredentialType("Email")',
+        constraints: [new Assert\Email(message: '值不是有效的电子邮件地址')]
+    )]
     #[ORM\Column(length: 128)]
-    private ?string $cert_key = null;
+    private ?string $credential_key = null;
 
     #[ORM\Column(length: 128, nullable: true)]
     private ?string $password_hash = null;
@@ -34,6 +48,20 @@ class Authentication
 
     #[ORM\Column]
     private ?\DateTimeImmutable $created_at = null;
+
+    public function isCredentialType(string $key): bool
+    {
+        $map = [
+            'Email' => AuthCredentialType::Email,
+            'PhoneNumber' => AuthCredentialType::PhoneNumber,
+            'WechatOpenid' => AuthCredentialType::WechatOpenid,
+            'QQOpenid' => AuthCredentialType::QQOpenid,
+        ];
+        if (array_key_exists($key, $map)) {
+            return $this->credential_type === $map[$key];
+        }
+        return false;
+    }
 
     public function getId(): ?int
     {
@@ -52,26 +80,26 @@ class Authentication
         return $this;
     }
 
-    public function getCertType(): ?AuthCertType
+    public function getCredentialType(): ?AuthCredentialType
     {
-        return $this->cert_type;
+        return $this->credential_type;
     }
 
-    public function setCertType(AuthCertType $cert_type): self
+    public function setCredentialType(?AuthCredentialType $credential_type): self
     {
-        $this->cert_type = $cert_type;
+        $this->credential_type = $credential_type;
 
         return $this;
     }
 
-    public function getCertKey(): ?string
+    public function getCredentialKey(): ?string
     {
-        return $this->cert_key;
+        return $this->credential_key;
     }
 
-    public function setCertKey(string $cert_key): self
+    public function setCredentialKey(?string $credential_key): self
     {
-        $this->cert_key = $cert_key;
+        $this->credential_key = $credential_key;
 
         return $this;
     }

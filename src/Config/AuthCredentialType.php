@@ -2,7 +2,7 @@
 
 namespace App\Config;
 
-enum AuthCertType: int
+enum AuthCredentialType: int
 {
     case Email = 1;
     case PhoneNumber = 2;

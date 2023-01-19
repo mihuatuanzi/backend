@@ -13,3 +13,5 @@ docker stack deploy -c stack.yml -c stack.dev.yml mihuatuanzi
 https://symfony.com/doc/current/doctrine.html
 
 https://www.doctrine-project.org/projects/doctrine-orm/en/current/reference/basic-mapping.html
+
+https://symfony.com/doc/current/validation.html
