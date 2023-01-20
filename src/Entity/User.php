@@ -4,11 +4,13 @@ namespace App\Entity;
 
 use App\Config\UserGenderType;
 use App\Repository\UserRepository;
+use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 class User implements UserInterface
@@ -18,26 +20,41 @@ class User implements UserInterface
     #[ORM\Column]
     private ?int $id = null;
 
+    #[Assert\NotBlank(message: '值不能为空')]
+    #[Assert\Uuid]
     #[ORM\Column(length: 64, unique: true)]
     private ?string $unique_id = null;
 
+    #[ORM\Column(length: 128, nullable: true)]
+    private ?string $password_hash = null;
+
+    #[Assert\NotBlank(message: '值不能为空')]
+    #[Assert\Length(max: 64, maxMessage: '昵称字数过多')]
     #[ORM\Column(length: 64)]
     private ?string $nickname = null;
 
+    #[Assert\NotBlank(message: '值不能为空')]
+    #[Assert\Choice(choices: [
+        UserGenderType::Female,
+        UserGenderType::Male,
+        UserGenderType::Neutral
+    ], message: '性别类型不正确')]
     #[ORM\Column(type: Types::SMALLINT, enumType: UserGenderType::class)]
-    private UserGenderType $gender;
+    private UserGenderType $gender = UserGenderType::Neutral;
 
-    #[ORM\Column(length: 255)]
+    #[Assert\Length(max: 255, maxMessage: '头像地址过长')]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $avatar = null;
 
+    #[Assert\Length(max: 255, maxMessage: '签名超出最大长度')]
     #[ORM\Column(length: 255)]
-    private ?string $signature = '';
+    private string $signature = '';
 
     #[ORM\Column]
     private array $roles = [];
 
     #[ORM\Column]
-    private ?\DateTimeImmutable $created_at = null;
+    private ?DateTimeImmutable $created_at = null;
 
     #[ORM\OneToMany(mappedBy: 'user_id', targetEntity: Authentication::class, orphanRemoval: true)]
     private Collection $authentications;
@@ -74,6 +91,29 @@ class User implements UserInterface
         return (string) $this->unique_id;
     }
 
+    public function getPasswordHash(): ?string
+    {
+        return $this->password_hash;
+    }
+
+    public function setPasswordHash(?string $password_hash): self
+    {
+        $this->password_hash = $password_hash;
+
+        return $this;
+    }
+
+    /**
+     * Returning a salt is only needed if you are not using a modern
+     * hashing algorithm (e.g. bcrypt or sodium) in your security.yaml.
+     *
+     * @see UserInterface
+     */
+    public function getSalt(): ?string
+    {
+        return null;
+    }
+
     public function getNickname(): ?string
     {
         return $this->nickname;
@@ -103,7 +143,7 @@ class User implements UserInterface
         return $this->avatar;
     }
 
-    public function setAvatar(string $avatar): self
+    public function setAvatar(?string $avatar): self
     {
         $this->avatar = $avatar;
 
@@ -141,12 +181,12 @@ class User implements UserInterface
         return $this;
     }
 
-    public function getCreatedAt(): ?\DateTimeImmutable
+    public function getCreatedAt(): ?DateTimeImmutable
     {
         return $this->created_at;
     }
 
-    public function setCreatedAt(\DateTimeImmutable $created_at): self
+    public function setCreatedAt(DateTimeImmutable $created_at): self
     {
         $this->created_at = $created_at;
 

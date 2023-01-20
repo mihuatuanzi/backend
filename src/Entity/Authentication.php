@@ -4,12 +4,13 @@ namespace App\Entity;
 
 use App\Config\AuthCredentialType;
 use App\Repository\AuthenticationRepository;
+use DateTimeImmutable;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: AuthenticationRepository::class)]
-#[ORM\UniqueConstraint(name: 'UNIQ_cert_type_key', columns: ['cert_type', 'cert_key'])]
+#[ORM\UniqueConstraint(name: 'UNIQ_credential_type_key', columns: ['credential_type', 'credential_key'])]
 class Authentication
 {
     #[ORM\Id]
@@ -24,13 +25,16 @@ class Authentication
     #[Assert\NotBlank(message: '值不能为空')]
     #[Assert\Choice(choices: [
         AuthCredentialType::Email,
-        AuthCredentialType::PhoneNumber,
+        AuthCredentialType::PhoneNumber
+    ], groups: ['InStation'])]
+    #[Assert\Choice(choices: [
         AuthCredentialType::WechatOpenid,
         AuthCredentialType::QQOpenid
-    ])]
+    ], groups: ['OpenIdConnect'])]
     #[ORM\Column(type: Types::SMALLINT, enumType: AuthCredentialType::class)]
     private ?AuthCredentialType $credential_type;
 
+    // TODO: email 模式校验 token
     #[Assert\NotBlank(message: '值不能为空')]
     #[Assert\Length(max: 128)]
     #[Assert\When(
@@ -40,14 +44,11 @@ class Authentication
     #[ORM\Column(length: 128)]
     private ?string $credential_key = null;
 
-    #[ORM\Column(length: 128, nullable: true)]
-    private ?string $password_hash = null;
-
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $annotation = null;
 
     #[ORM\Column]
-    private ?\DateTimeImmutable $created_at = null;
+    private ?DateTimeImmutable $created_at = null;
 
     public function isCredentialType(string $key): bool
     {
@@ -104,18 +105,6 @@ class Authentication
         return $this;
     }
 
-    public function getPasswordHash(): ?string
-    {
-        return $this->password_hash;
-    }
-
-    public function setPasswordHash(?string $password_hash): self
-    {
-        $this->password_hash = $password_hash;
-
-        return $this;
-    }
-
     public function getAnnotation(): ?string
     {
         return $this->annotation;
@@ -128,12 +117,12 @@ class Authentication
         return $this;
     }
 
-    public function getCreatedAt(): ?\DateTimeImmutable
+    public function getCreatedAt(): ?DateTimeImmutable
     {
         return $this->created_at;
     }
 
-    public function setCreatedAt(\DateTimeImmutable $created_at): self
+    public function setCreatedAt(DateTimeImmutable $created_at): self
     {
         $this->created_at = $created_at;
 
