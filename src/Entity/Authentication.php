@@ -4,9 +4,11 @@ namespace App\Entity;
 
 use App\Config\AuthCredentialType;
 use App\Repository\AuthenticationRepository;
+use App\Validator\SuppressDuplicateCredential;
 use DateTimeImmutable;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Ramsey\Uuid\Uuid;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: AuthenticationRepository::class)]
@@ -25,22 +27,20 @@ class Authentication
     #[Assert\NotBlank(message: '值不能为空')]
     #[Assert\Choice(choices: [
         AuthCredentialType::Email,
-        AuthCredentialType::PhoneNumber
-    ], groups: ['InStation'])]
-    #[Assert\Choice(choices: [
+        AuthCredentialType::PhoneNumber,
         AuthCredentialType::WechatOpenid,
         AuthCredentialType::QQOpenid
-    ], groups: ['OpenIdConnect'])]
+    ])]
     #[ORM\Column(type: Types::SMALLINT, enumType: AuthCredentialType::class)]
     private ?AuthCredentialType $credential_type;
 
-    // TODO: email 模式校验 token
     #[Assert\NotBlank(message: '值不能为空')]
     #[Assert\Length(max: 128)]
     #[Assert\When(
         expression: 'this.isCredentialType("Email")',
         constraints: [new Assert\Email(message: '值不是有效的电子邮件地址')]
     )]
+    #[SuppressDuplicateCredential(credentialTypeExpr: 'this.getCredentialType()')]
     #[ORM\Column(length: 128)]
     private ?string $credential_key = null;
 
@@ -127,5 +127,15 @@ class Authentication
         $this->created_at = $created_at;
 
         return $this;
+    }
+
+    public function initializeUser(): User
+    {
+        $user = new User();
+        $user->setUniqueId(Uuid::uuid7());
+        $user->setNickname($this->getCredentialKey());
+        $user->setCreatedAt($this->getCreatedAt());
+        $this->setUser($user);
+        return $user;
     }
 }

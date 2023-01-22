@@ -1,36 +1,47 @@
 version: "3.9"
 services:
-  app:
-    hostname: backend.app.mihuatuanzi.io
-    image: seanscraft/com.mihuatuanzi.backend.app:latest
-    build:
-      context: .
-      target: app
-    deploy:
-      update_config:
-        order: start-first
-    depends_on:
-      - cache
-  proxy:
-    hostname: backend.proxy.mihuatuanzi.io
-    image: seanscraft/com.mihuatuanzi.backend.proxy:latest
-    build:
-      context: .
-      target: ingress
-    deploy:
-      update_config:
-        order: start-first
-  database:
-    image: mariadb:10.10
-    hostname: backend.database.mihuatuanzi.io
-    volumes:
-      - mihuatuanzi_database_backend:/var/lib/mysql:rw
-    environment:
-      MARIADB_ROOT_PASSWORD: mihuatuanzi
-      MARIADB_DATABASE: mihuatuanzi_backend
-      MARIADB_USER: admin
-      MARIADB_PASSWORD: mihuatuanzi
+    app:
+        hostname: backend.app.mihuatuanzi.io
+        image: seanscraft/com.mihuatuanzi.backend.app:latest
+        build:
+            context: .
+            target: app
+        deploy:
+            update_config:
+                order: start-first
+        depends_on:
+            - cache
+        secrets:
+            - source: mihuatuanzi_app_rsa_private
+              target: /home/www-data/secret/mihuatuanzi/app_rsa.private.pem
+            - source: mihuatuanzi_app_rsa_public
+              target: /home/www-data/secret/mihuatuanzi/app_rsa.public.pem
+    proxy:
+        hostname: backend.proxy.mihuatuanzi.io
+        image: seanscraft/com.mihuatuanzi.backend.proxy:latest
+        build:
+            context: .
+            target: ingress
+        deploy:
+            update_config:
+                order: start-first
+    database:
+        image: mariadb:10.10
+        hostname: backend.database.mihuatuanzi.io
+        volumes:
+            - mihuatuanzi_database_backend:/var/lib/mysql:rw
+        environment:
+            MARIADB_ROOT_PASSWORD: mihuatuanzi
+            MARIADB_DATABASE: mihuatuanzi_backend
+            MARIADB_USER: admin
+            MARIADB_PASSWORD: mihuatuanzi
 
 volumes:
-  mihuatuanzi_database_backend:
-    external: true
+    mihuatuanzi_database_backend:
+        external: true
+
+secrets:
+    mihuatuanzi_app_rsa_private:
+        external: true
+    mihuatuanzi_app_rsa_public:
+        external: true
