@@ -15,6 +15,11 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
+/**
+ * 用户身份相关
+ *
+ * @controller
+ */
 class AuthController extends AbstractController
 {
     #[Route('/auth/send-email-verification', name: 'auth_send_email_verification', methods: ['POST'])]
