@@ -2,10 +2,8 @@
 
 namespace App\Validator;
 
-use AllowDynamicProperties;
 use App\Repository\AuthenticationRepository;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
-use Symfony\Component\Validator\Exception\UnexpectedValueException;
 use Symfony\Component\Validator\Exception\UnexpectedTypeException;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\ConstraintValidator;

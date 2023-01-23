@@ -2,7 +2,9 @@
 
 namespace App\Repository;
 
+use App\Config\AuthCredentialType;
 use App\Entity\Authentication;
+use DateTimeImmutable;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 

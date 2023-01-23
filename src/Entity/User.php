@@ -9,11 +9,12 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
-class User implements UserInterface
+class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -26,7 +27,7 @@ class User implements UserInterface
     private ?string $unique_id = null;
 
     #[ORM\Column(length: 128, nullable: true)]
-    private ?string $password_hash = null;
+    private ?string $password = null;
 
     #[Assert\NotBlank(message: '值不能为空')]
     #[Assert\Length(max: 64, maxMessage: '昵称字数过多')]
@@ -91,14 +92,14 @@ class User implements UserInterface
         return (string) $this->unique_id;
     }
 
-    public function getPasswordHash(): ?string
+    public function getPassword(): ?string
     {
-        return $this->password_hash;
+        return $this->password;
     }
 
-    public function setPasswordHash(?string $password_hash): self
+    public function setPassword(?string $password): self
     {
-        $this->password_hash = $password_hash;
+        $this->password = $password;
 
         return $this;
     }
@@ -200,6 +201,7 @@ class User implements UserInterface
     {
         // If you store any temporary, sensitive data on the user, clear it here
         // $this->plainPassword = null;
+        $this->password = null;
     }
 
     /**
