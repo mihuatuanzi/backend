@@ -23,14 +23,12 @@ readonly class AccessTokenHandler implements AccessTokenHandlerInterface
     public function getUserBadgeFrom(string $accessToken): UserBadge
     {
         $payload = $this->authentic->decodeJwtToken($accessToken);
-//        $payload = ['sub' => '0185ddde-eee1-700d-8ec3-f6862cbcf521'];
         if (!$payload) {
             throw new BadCredentialsException('Invalid credentials.');
         }
 
-        $uniqueId = $payload['sub'];
-        $count = $this->userRepository->count(['unique_id' => $uniqueId]);
-        if ($count === 0) {
+        $uniqueId = $payload['sub'] ?? null;
+        if ($uniqueId && $this->userRepository->count(['unique_id' => $uniqueId]) === 0) {
             throw new BadCredentialsException('Invalid credentials.');
         }
 
