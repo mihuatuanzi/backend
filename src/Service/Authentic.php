@@ -2,6 +2,7 @@
 
 namespace App\Service;
 
+use App\Entity\User;
 use App\Interface\EmailDelivery;
 use Exception;
 use Firebase\JWT\JWT;
@@ -14,6 +15,8 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 readonly class Authentic
 {
+    private const ACCESS_TOKEN_EXPIRED = 3600 * 2;
+
     public function __construct(
         private ValidatorInterface    $validator,
         private EmailDelivery         $email,
@@ -35,6 +38,24 @@ readonly class Authentic
         return null;
     }
 
+    public function makeAccessToken(User $user): array
+    {
+        $now = time();
+        $expiredTime = $now + self::ACCESS_TOKEN_EXPIRED;
+        $privateKey = file_get_contents($this->parameterBag->get('app.secret.private'));
+        $payload = [
+            'iss' => 'mihuatuanzi.com',
+            'aud' => 'mihuatuanzi.com',
+            'iat' => $now,
+            'exp' => $expiredTime,
+            'sub' => $user->getUserIdentifier(),
+        ];
+        $accessToken = JWT::encode($payload, $privateKey, 'RS256');
+        $payload['nbf'] = $expiredTime - floor(self::ACCESS_TOKEN_EXPIRED / 2);
+        $refreshToken = JWT::encode($payload, $privateKey, 'RS256');
+        return [$accessToken, $refreshToken, $expiredTime, $payload['nbf']];
+    }
+
     public function makeVerifyToken(string $email): string
     {
         $privateKey = file_get_contents($this->parameterBag->get('app.secret.private'));
@@ -44,7 +65,7 @@ readonly class Authentic
             'iat' => time(),
             'exp' => time() + 30 * 60,
             'email' => $email,
-            'scopes' => ['auth_verify_email', '']
+            'scopes' => ['auth_verify_email']
         ];
         return JWT::encode($payload, $privateKey, 'RS256');
     }
@@ -54,7 +75,7 @@ readonly class Authentic
         $verifyToken = $this->makeVerifyToken($email);
         $url = $this->router->generate('auth_verify_email');
         return $this->email->send($email, '邮箱验证', 'email_verify', [
-            'verify_url' => "$url?verify_token=$verifyToken&t=" . time()
+            'verify_url' => "$url?verify_token=$verifyToken"
         ]);
     }
 

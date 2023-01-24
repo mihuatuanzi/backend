@@ -10,6 +10,9 @@ parameters:
     app.secret.public: '%env(APP_SECRET_PUBLIC)%'
     env.app_env: '%env(APP_ENV)%'
     env.app_version: '%env(APP_VERSION)%'
+    env.oss.ali.access_key_id: '%env(OSS_ALI_ACCESS_KEY_ID)%'
+    env.oss.ali.access_key_secret: '%env(OSS_ALI_ACCESS_KEY_SECRET)%'
+    env.oss.ali.endpoint: '%env(OSS_ALI_ENDPOINT)%'
 services:
     # default configuration for services in *this* file
     _defaults:
@@ -32,3 +35,4 @@ services:
         autowire: true
 
     App\Interface\EmailDelivery: '@App\Service\SendGrid'
+    App\Interface\ObjectStorage: '@App\Service\AliOss'

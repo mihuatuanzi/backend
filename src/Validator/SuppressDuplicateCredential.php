@@ -16,6 +16,7 @@ class SuppressDuplicateCredential extends Constraint
     public function __construct(
         public readonly ?AuthCredentialType $credentialType = null,
         public readonly ?string $credentialTypeExpr = null,
+        public readonly bool $pass = false,
         mixed $options = null,
         array $groups = null,
         mixed $payload = null

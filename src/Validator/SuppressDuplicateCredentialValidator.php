@@ -39,7 +39,8 @@ class SuppressDuplicateCredentialValidator extends ConstraintValidator
             'credential_key' => $value
         ]);
 
-        if ($count > 0) {
+        $violate = $constraint->pass === false ? $count > 0 : $count === 0;
+        if ($violate) {
             $this->context->buildViolation($constraint->message)
                 ->addViolation();
         }

@@ -7,6 +7,7 @@ use App\Entity\Authentication;
 use DateTimeImmutable;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use Symfony\Component\Security\Http\Authenticator\Passport\Badge\UserBadge;
 
 /**
  * @extends ServiceEntityRepository<Authentication>
@@ -39,6 +40,22 @@ class AuthenticationRepository extends ServiceEntityRepository
         if ($flush) {
             $this->getEntityManager()->flush();
         }
+    }
+
+    public function findOrCreateByEmail(string $email): Authentication
+    {
+        $auth = $this->findOneBy([
+            'credential_type' => AuthCredentialType::Email, 'credential_key' => $email
+        ]);
+        if (null === $auth) {
+            $auth = new Authentication();
+            $auth->setCredentialType(AuthCredentialType::Email);
+            $auth->setCredentialKey($email);
+            $auth->setCreatedAt(new DateTimeImmutable());
+            // User 必须在 Auth 之前保存
+            $this->getEntityManager()->persist($auth->initializeUser());
+        }
+        return $auth;
     }
 
 //    /**

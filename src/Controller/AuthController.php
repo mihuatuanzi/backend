@@ -3,13 +3,12 @@
 namespace App\Controller;
 
 use App\Config\AuthCredentialType;
-use App\Entity\Authentication;
-use App\Entity\User;
+use App\Config\SendVerificationScene;
 use App\Repository\AuthenticationRepository;
 use App\Repository\UserRepository;
+use App\Response\Certificate;
 use App\Service\Authentic;
 use App\Validator\SuppressDuplicateCredential;
-use DateTimeImmutable;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -27,18 +26,21 @@ class AuthController extends AbstractController
     /**
      * 发送 email 验证链接
      */
-    #[Route('/auth/send-email-verification', name: 'auth_send_email_verification', methods: ['POST'])]
-    public function sendEmailVerification(
+    #[Route('/auth/send-verification-email', name: 'auth_send_verification_email', methods: ['POST'])]
+    public function sendVerificationEmail(
         Request            $request,
         Authentic          $authentic,
         ValidatorInterface $validator,
     ): Response
     {
-        $credentialKey = $request->get('credential_key');
-        $errors = $validator->validate($credentialKey, [
-            new Assert\Email(null, '值不是有效的电子邮件地址'),
-            new SuppressDuplicateCredential(AuthCredentialType::Email)
-        ]);
+        $scene = $request->get('scene');
+        $credentialKey = $request->get('email');
+
+        $constraints = [new Assert\Email(null, '值不是有效的电子邮件地址')];
+        if (SendVerificationScene::SignUp === SendVerificationScene::from($scene)) {
+            $constraints[] = new SuppressDuplicateCredential(AuthCredentialType::Email);
+        }
+        $errors = $validator->validate($credentialKey, $constraints);
         if ($errors->count()) {
             return $this->jsonErrorsForConstraints($errors);
         }
@@ -54,108 +56,73 @@ class AuthController extends AbstractController
      * Email 注册流程
      * 验证邮箱并创建账号
      */
-    #[IsGranted('ROLE_USER')]
-    #[Route('/auth/verify-email', name: 'auth_verify_email', methods: ['POST'])]
-    public function verifyEmail(
+    #[Route('/auth/verify-email-and-set-password', name: 'auth_verify_email_and_set_pwd', methods: ['POST'])]
+    public function verifyEmailAndSetPassword(
         Request                     $request,
         Authentic                   $authentic,
         UserRepository              $userRepository,
-        ValidatorInterface          $validator,
         AuthenticationRepository    $authenticationRepository,
         UserPasswordHasherInterface $passwordHashTool,
     ): JsonResponse
     {
         $password = $request->get('password');
-        if ($errors = $authentic->validatePassword($password)) {
+        $verifyToken = $request->get('verify_token');
+        $routeName = $request->attributes->get('_route');
+
+        if ($password && $errors = $authentic->validatePassword($password)) {
             return $this->jsonErrorsForConstraints($errors);
         }
 
-        $email = $authentic->getEmailByVerifyToken(
-            $request->get('verify_token'),
-            $request->attributes->get('_route')
-        );
-        if (!$email) {
+        if (!($email = $authentic->getEmailByVerifyToken($verifyToken, $routeName))) {
             return $this->jsonErrors(['message' => '无法激活账户']);
         }
 
-        $auth = new Authentication();
-        $auth->setCredentialType(AuthCredentialType::Email)
-            ->setCredentialKey($email)
-            ->setCreatedAt(new DateTimeImmutable());
-        if (($errors = $validator->validate($auth))->count()) {
-            return $this->jsonErrorsForConstraints($errors);
+        $auth = $authenticationRepository->findOrCreateByEmail($email);
+        if ($password) {
+            $user = $auth->getUser();
+            $user->setPassword($passwordHashTool->hashPassword($user, $password));
+            $userRepository->save($user, true);
         }
 
-        $user = $auth->initializeUser();
-        $hashedPassword = $passwordHashTool->hashPassword($user, $password);
-        $user->setPassword($hashedPassword);
-
-        $userRepository->save($auth->getUser(), true);
         $authenticationRepository->save($auth, true);
 
-        return $this->acceptUserAuth($user);
+        return $this->json(['message' => 'Succeed']);
     }
 
-    /**
-     * 重置密码 Email 方式
-     */
-    #[Route('/auth/reset-password-by-email', name: 'auth_reset_password_by_email', methods: ['POST'])]
-    public function resetPasswordByEmail(
+    #[Route('/auth/sign-in-by-email', name: 'sign_in_by_email', methods: ['POST'])]
+    public function signInByEmail(
         Request                     $request,
         Authentic                   $authentic,
-        UserRepository              $userRepository,
         AuthenticationRepository    $authenticationRepository,
         UserPasswordHasherInterface $passwordHashTool,
+        ValidatorInterface          $validator,
+        Certificate $signInAccept
     ): JsonResponse
     {
+        $credentialKey = $request->get('email');
         $password = $request->get('password');
-        if ($errors = $authentic->validatePassword($password)) {
+
+        $errors = $validator->validate($credentialKey, new Assert\Email(null, '值不是有效的电子邮件地址'));
+        if ($errors->count()) {
             return $this->jsonErrorsForConstraints($errors);
         }
 
-        $email = $authentic->getEmailByVerifyToken(
-            $request->get('verify_token'),
-            $request->attributes->get('_route')
-        );
-        if (!$email) {
-            return $this->jsonErrors(['message' => '无法激活账户']);
+        if ($errors = $authentic->validatePassword($password)) {
+            return $this->jsonErrorsForConstraints($errors);
         }
 
         $auth = $authenticationRepository->findOneBy([
-            'credential_type' => AuthCredentialType::Email,
-            'credential_key' => $email
+            'credential_type' => AuthCredentialType::Email, 'credential_key' => $credentialKey
         ]);
-        if (null === $auth) {
-            return $this->jsonErrors(['message' => '邮箱未注册']);
+        if (!$auth) {
+            return $this->jsonErrors(['message' => '邮箱尚未注册']);
         }
+
         $user = $auth->getUser();
+        if ($passwordHashTool->isPasswordValid($user, $password)) {
+            return $this->json($signInAccept->withUser($user));
+        }
 
-        $hashedPassword = $passwordHashTool->hashPassword($user, $password);
-        $user->setPassword($hashedPassword);
-
-        $userRepository->save($user, true);
-
-        return $this->json(['message' => '更新成功']);
-    }
-
-    /**
-     * 返回登录用户信息
-     *
-     * @param User $user
-     * @return JsonResponse
-     */
-    private function acceptUserAuth(User $user): JsonResponse
-    {
-        return $this->json([
-            'user' => [
-                'internalId' => $user->getId(),
-                'uniqueId' => $user->getUserIdentifier(),
-                'nickname' => $user->getNickname(),
-                'gender' => $user->getGender(),
-                'avatar' => $user->getAvatar(),
-                'signature' => $user->getSignature(),
-                'createdAt' => $user->getCreatedAt()
-            ]
-        ]);
+        return $this->jsonErrors(['message' => '账号或密码不正确']);
     }
 }
