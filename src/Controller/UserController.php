@@ -7,9 +7,11 @@ use App\Interface\ObjectStorage;
 use App\Repository\AuthenticationRepository;
 use App\Repository\UserRepository;
 use App\Service\Authentic;
+use Symfony\Component\HttpClient\Response\ResponseStream;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
@@ -27,7 +29,7 @@ class UserController extends AbstractController
         Authentic                   $authentic,
         UserRepository              $userRepository,
         UserPasswordHasherInterface $passwordHashTool,
-        #[CurrentUser] ?User         $user,
+        #[CurrentUser] ?User        $user,
     ): JsonResponse
     {
         $password = $request->get('password');
@@ -57,8 +59,8 @@ class UserController extends AbstractController
      */
     #[Route('/user/account-avatar-update', name: 'app_user_account_avatar_update', methods: ['POST'])]
     public function accountAvatarUpdate(
-        Request             $request,
-        ObjectStorage       $objectStorage,
+        Request              $request,
+        ObjectStorage        $objectStorage,
         #[CurrentUser] ?User $user,
     ): JsonResponse
     {
@@ -67,9 +69,35 @@ class UserController extends AbstractController
         if (!$avatar) {
             return $this->jsonErrors(['message' => 'Update failed']);
         }
+        $mimeType = $avatar->getMimeType();
+        $suffixMap = [
+            'image/png' => 'png',
+            'image/jpg' => 'jpg',
+            'image/jpeg' => 'jpg',
+            'image/gif' => 'gif',
+        ];
+        if (!array_key_exists($mimeType, $suffixMap)) {
+            return $this->jsonErrors(['message' => 'Update failed']);
+        }
         $fileName = $user->getUserIdentifier();
         $objectStorage->put("account/avatar/$fileName", $avatar->getRealPath());
         return $this->json(['message' => 'Succeed']);
+    }
+
+    /**
+     * 上传头像
+     */
+    #[Route('/user/avatar', name: 'app_user_avatar', methods: ['GET'])]
+    public function avatar(
+        Request       $request,
+        ObjectStorage $objectStorage,
+    ): Response
+    {
+        $uniqueId = $request->get('unique_id');
+        $content = $objectStorage->get("account/avatar/$uniqueId");
+        return new Response($content, 200, [
+            'Content-Type' => 'image/png'
+        ]);
     }
 
     /**
