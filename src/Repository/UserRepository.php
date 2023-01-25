@@ -40,6 +40,31 @@ class UserRepository extends ServiceEntityRepository
         }
     }
 
+    public function searchByKeywords(string $keywords)
+    {
+        return $this->createQueryBuilder('u')
+            ->where('u.nickname like :val')
+            ->setParameter('val', "%$keywords%")
+            ->orderBy('u.id', 'ASC')
+            ->setMaxResults(20)
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function increaseExp(User $entity, int $exp = 1)
+    {
+        $this->createQueryBuilder('u')
+            ->update()
+            ->set('u.exp', 'u.exp + :val')
+            ->where('u.id = :id')
+            ->setParameters([
+                'val' => $exp,
+                'id' => $entity->getId()
+            ])
+            ->getQuery()
+            ->execute();
+    }
+
 //    /**
 //     * @return User[] Returns an array of User objects
 //     */

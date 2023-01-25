@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Config\UserGenderType;
+use App\Config\UserStatus;
 use App\Repository\UserRepository;
 use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -17,6 +18,9 @@ use Symfony\Component\Validator\Constraints as Assert;
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     private const AVATAR_BASE_URL = 'https://mihuatuanzi-backend.oss-cn-hangzhou.aliyuncs.com/';
+
+    const STATUS_ACTIVE = 1;
+    const STATUS_INACTIVE = 2;
 
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -53,6 +57,15 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 255)]
     private string $signature = '';
 
+    #[Assert\NotBlank(message: '值不能为空')]
+    #[ORM\Column]
+    private ?int $exp = null;
+
+    #[Assert\NotBlank(message: '值不能为空')]
+    #[Assert\Choice(choices: [self::STATUS_ACTIVE, self::STATUS_INACTIVE], message: '用户状态不正确')]
+    #[ORM\Column(type: Types::SMALLINT)]
+    private ?int $status = null;
+
     #[ORM\Column]
     private array $roles = [];
 
@@ -62,9 +75,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(mappedBy: 'user_id', targetEntity: Authentication::class, orphanRemoval: true)]
     private Collection $authentications;
 
+    #[ORM\OneToMany(mappedBy: 'user_id', targetEntity: Dumpling::class, orphanRemoval: true)]
+    private Collection $dumplings;
+
     public function __construct()
     {
         $this->authentications = new ArrayCollection();
+        $this->dumplings = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -184,6 +201,30 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
+    public function getExp(): ?int
+    {
+        return $this->exp;
+    }
+
+    public function setExp(int $exp): self
+    {
+        $this->exp = $exp;
+
+        return $this;
+    }
+
+    public function getStatus(): ?int
+    {
+        return $this->status;
+    }
+
+    public function setStatus(int $status): self
+    {
+        $this->status = $status;
+
+        return $this;
+    }
+
     public function getCreatedAt(): ?DateTimeImmutable
     {
         return $this->created_at;
@@ -229,6 +270,36 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             // set the owning side to null (unless already changed)
             if ($authentication->getUser() === $this) {
                 $authentication->setUser(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Dumpling>
+     */
+    public function getDumplings(): Collection
+    {
+        return $this->dumplings;
+    }
+
+    public function addDumpling(Dumpling $dumpling): self
+    {
+        if (!$this->dumplings->contains($dumpling)) {
+            $this->dumplings->add($dumpling);
+            $dumpling->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeDumpling(Dumpling $dumpling): self
+    {
+        if ($this->dumplings->removeElement($dumpling)) {
+            // set the owning side to null (unless already changed)
+            if ($dumpling->getUser() === $this) {
+                $dumpling->setUser(null);
             }
         }
 

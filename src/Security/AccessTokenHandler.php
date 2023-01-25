@@ -2,6 +2,7 @@
 
 namespace App\Security;
 
+use App\Entity\User;
 use App\Repository\UserRepository;
 use App\Service\Authentic;
 use Symfony\Component\Security\Core\Exception\BadCredentialsException;
@@ -28,7 +29,11 @@ readonly class AccessTokenHandler implements AccessTokenHandlerInterface
         }
 
         $uniqueId = $payload['sub'] ?? null;
-        if (!$uniqueId || $this->userRepository->count(['unique_id' => $uniqueId]) === 0) {
+        $countUsers = $this->userRepository->count([
+            'unique_id' => $uniqueId,
+            'status' => User::STATUS_ACTIVE
+        ]);
+        if (!$uniqueId || $countUsers === 0) {
             throw new BadCredentialsException('Invalid credentials.');
         }
 

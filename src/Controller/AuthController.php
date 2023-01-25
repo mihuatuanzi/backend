@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Config\AuthCredentialType;
 use App\Config\SendVerificationScene;
+use App\Entity\User;
 use App\Repository\AuthenticationRepository;
 use App\Repository\UserRepository;
 use App\Response\Certificate;
@@ -93,6 +94,7 @@ class AuthController extends AbstractController
         Request                     $request,
         Authentic                   $authentic,
         Certificate                 $certificate,
+        UserRepository              $userRepository,
         ValidatorInterface          $validator,
         AuthenticationRepository    $authenticationRepository,
         UserPasswordHasherInterface $passwordHashTool,
@@ -118,7 +120,12 @@ class AuthController extends AbstractController
         }
 
         $user = $auth->getUser();
+        if ($user->getStatus() !== User::STATUS_ACTIVE) {
+            return $this->jsonErrors(['message' => '账号处于禁用状态，请联系 Sean 恢复']);
+        }
+
         if ($passwordHashTool->isPasswordValid($user, $password)) {
+//            $userRepository->increaseExp($user);
             return $this->json(['certificate' => $certificate->withUser($user)]);
         }
 

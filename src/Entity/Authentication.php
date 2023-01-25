@@ -134,6 +134,8 @@ class Authentication
         $user = new User();
         $user->setUniqueId(Uuid::uuid7());
         $user->setNickname($this->getCredentialKey());
+        $user->setExp(0);
+        $user->setStatus(User::STATUS_ACTIVE);
         $user->setCreatedAt($this->getCreatedAt());
         $this->setUser($user);
         return $user;

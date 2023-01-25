@@ -18,12 +18,26 @@ use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-#[IsGranted('ROLE_USER')]
 class UserController extends AbstractController
 {
+    #[Route('/user/search', methods: ['GET'])]
+    public function search(
+        Request        $request,
+        UserSummary    $userSummary,
+        UserRepository $userRepository,
+    ): JsonResponse
+    {
+        $keywords = $request->get('keywords');
+        $users = $userRepository->searchByKeywords($keywords);
+        return $this->json([
+            'user_summaries' => array_map(fn($u) => $userSummary->withUser($u), $users)
+        ]);
+    }
+
     /**
      * 设置密码
      */
+    #[IsGranted('ROLE_USER')]
     #[Route('/user/set-password', methods: ['POST'])]
     public function setPassword(
         Request                     $request,
@@ -47,6 +61,7 @@ class UserController extends AbstractController
     /**
      * 更新账户信息
      */
+    #[IsGranted('ROLE_USER')]
     #[Route('/user/account-data-update', methods: ['POST'])]
     public function accountDataUpdate(
         Request              $request,
@@ -72,6 +87,7 @@ class UserController extends AbstractController
     /**
      * 上传头像
      */
+    #[IsGranted('ROLE_USER')]
     #[Route('/user/account-avatar-update', name: 'app_user_account_avatar_update', methods: ['POST'])]
     public function accountAvatarUpdate(
         Request              $request,
@@ -108,8 +124,9 @@ class UserController extends AbstractController
     }
 
     /**
-     * 接触绑定认证信息
+     * 解除绑定认证信息
      */
+    #[IsGranted('ROLE_USER')]
     #[Route('/user/unbinding-authentication', methods: ['POST'])]
     public function unbindingAuthentication(
         Request                  $request,
