@@ -11,7 +11,7 @@ parameters:
     env.app_env: '%env(APP_ENV)%'
     env.app_version: '%env(APP_VERSION)%'
     env.oss.ali.access_key_id: '%env(OSS_ALI_ACCESS_KEY_ID)%'
-    env.oss.ali.access_key_secret: '%env(OSS_ALI_ACCESS_KEY_SECRET)%'
+    env.oss.ali.access_key_secret_file: '%env(OSS_ALI_ACCESS_KEY_SECRET_FILE)%'
     env.oss.ali.endpoint: '%env(OSS_ALI_ENDPOINT)%'
 services:
     # default configuration for services in *this* file

@@ -16,6 +16,8 @@ services:
               target: /home/www-data/secret/mihuatuanzi/app_rsa.private.pem
             - source: mihuatuanzi_app_rsa_public
               target: /home/www-data/secret/mihuatuanzi/app_rsa.public.pem
+            - source: mihuatuanzi_app_ali_access_key_secret
+              target: /home/www-data/secret/mihuatuanzi/app_ali_access_key_secret.key
     proxy:
         hostname: backend.proxy.mihuatuanzi.io
         image: seanscraft/com.mihuatuanzi.backend.proxy:latest
@@ -44,4 +46,6 @@ secrets:
     mihuatuanzi_app_rsa_private:
         external: true
     mihuatuanzi_app_rsa_public:
+        external: true
+    mihuatuanzi_app_ali_access_key_secret:
         external: true

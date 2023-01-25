@@ -4,9 +4,7 @@ namespace App\Response;
 
 use App\Config\UserGenderType;
 use App\Entity\User;
-use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 
-#[Autoconfigure(lazy: true)]
 class UserSummary
 {
     public string $uniqueId;

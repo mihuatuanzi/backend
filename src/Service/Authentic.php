@@ -65,7 +65,7 @@ readonly class Authentic
             'iat' => time(),
             'exp' => time() + 30 * 60,
             'email' => $email,
-            'scopes' => ['auth_verify_email']
+            'scopes' => ['auth_verify_email_and_set_pwd']
         ];
         return JWT::encode($payload, $privateKey, 'RS256');
     }
@@ -73,7 +73,7 @@ readonly class Authentic
     public function sendVerificationMail(string $email): bool
     {
         $verifyToken = $this->makeVerifyToken($email);
-        $url = $this->router->generate('auth_verify_email');
+        $url = $this->router->generate('auth_verify_email_and_set_pwd');
         return $this->email->send($email, '邮箱验证', 'email_verify', [
             'verify_url' => "$url?verify_token=$verifyToken"
         ]);

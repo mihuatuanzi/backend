@@ -2,20 +2,21 @@
 
 namespace App\Controller;
 
+use App\Config\UserGenderType;
 use App\Entity\User;
 use App\Interface\ObjectStorage;
 use App\Repository\AuthenticationRepository;
 use App\Repository\UserRepository;
+use App\Response\UserSummary;
 use App\Service\Authentic;
-use Symfony\Component\HttpClient\Response\ResponseStream;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 #[IsGranted('ROLE_USER')]
 class UserController extends AbstractController
@@ -44,14 +45,28 @@ class UserController extends AbstractController
     }
 
     /**
-     * 设置账户信息
+     * 更新账户信息
      */
     #[Route('/user/account-data-update', methods: ['POST'])]
     public function accountDataUpdate(
-        Request $request,
+        Request              $request,
+        UserSummary          $userSummary,
+        UserRepository       $userRepository,
+        ValidatorInterface   $validator,
+        #[CurrentUser] ?User $user,
     ): JsonResponse
     {
-        return $this->json(['message' => 'Succeed']);
+        $user->setNickname($request->get('nickname'));
+        $user->setGender(UserGenderType::tryFrom($request->get('gender')));
+        $user->setSignature($request->get('signature'));
+
+        $errors = $validator->validate($user);
+        if ($errors->count()) {
+            return $this->jsonErrorsForConstraints($errors);
+        }
+        $userRepository->save($user, true);
+
+        return $this->json(['user_summary' => $userSummary->withUser($user)]);
     }
 
     /**
@@ -61,15 +76,16 @@ class UserController extends AbstractController
     public function accountAvatarUpdate(
         Request              $request,
         ObjectStorage        $objectStorage,
+        UserRepository       $userRepository,
         #[CurrentUser] ?User $user,
     ): JsonResponse
     {
         /** @var ?UploadedFile $avatar */
-        $avatar = $request->files->get('avatar');
-        if (!$avatar) {
+        $file = $request->files->get('avatar');
+        if (!$file) {
             return $this->jsonErrors(['message' => 'Update failed']);
         }
-        $mimeType = $avatar->getMimeType();
+        $mimeType = $file->getMimeType();
         $suffixMap = [
             'image/png' => 'png',
             'image/jpg' => 'jpg',
@@ -80,23 +96,14 @@ class UserController extends AbstractController
             return $this->jsonErrors(['message' => 'Update failed']);
         }
         $fileName = $user->getUserIdentifier();
-        $objectStorage->put("account/avatar/$fileName", $avatar->getRealPath());
-        return $this->json(['message' => 'Succeed']);
-    }
+        $avatar = "account/avatar/$fileName." . $suffixMap[$mimeType];
 
-    /**
-     * 上传头像
-     */
-    #[Route('/user/avatar', name: 'app_user_avatar', methods: ['GET'])]
-    public function avatar(
-        Request       $request,
-        ObjectStorage $objectStorage,
-    ): Response
-    {
-        $uniqueId = $request->get('unique_id');
-        $content = $objectStorage->get("account/avatar/$uniqueId");
-        return new Response($content, 200, [
-            'Content-Type' => 'image/png'
+        $objectStorage->put($avatar, $file->getRealPath(), $mimeType);
+        $userRepository->save($user->setAvatar($avatar . '?_t=' . time()), true);
+
+        return $this->json([
+            'avatar' => $user->getAvatar(),
+            'message' => 'Succeed'
         ]);
     }
 
@@ -115,7 +122,7 @@ class UserController extends AbstractController
             return $this->jsonErrors(['message' => 'Unbinding failed']);
         }
         if ($authRepository->count(['user_id' => $user->getId()]) === 1) {
-            return $this->jsonErrors(['message' => '必须至少保留一条认证信息']);
+            return $this->jsonErrors(['message' => '至少保留一条认证信息']);
         }
         if (!$auth = $authRepository->findOneBy(['id' => $id, 'user_id' => $user->getId()])) {
             return $this->jsonErrors(['message' => 'Unbinding failed']);

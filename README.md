@@ -10,6 +10,8 @@ openssl rsa -in app_rsa.private.pem -pubout -out app_rsa.public.pem
 # 创建 docker secret
 docker secret create mihuatuanzi_app_rsa_private ./app_rsa.private.pem
 docker secret create mihuatuanzi_app_rsa_public ./app_rsa.public.pem
+# 接入阿里云密钥
+printf "<secret-value>" | docker secret create mihuatuanzi_app_ali_access_key_secret -
 ```
 
 ## 初始化 Backend

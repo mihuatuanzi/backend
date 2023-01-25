@@ -4,9 +4,7 @@ namespace App\Response;
 
 use App\Entity\User;
 use App\Service\Authentic;
-use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 
-#[Autoconfigure(lazy: true)]
 class Certificate
 {
     public string $access_token;

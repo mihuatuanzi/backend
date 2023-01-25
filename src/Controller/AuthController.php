@@ -11,7 +11,6 @@ use App\Service\Authentic;
 use App\Validator\SuppressDuplicateCredential;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
-use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -93,10 +92,10 @@ class AuthController extends AbstractController
     public function signInByEmail(
         Request                     $request,
         Authentic                   $authentic,
+        Certificate                 $certificate,
+        ValidatorInterface          $validator,
         AuthenticationRepository    $authenticationRepository,
         UserPasswordHasherInterface $passwordHashTool,
-        ValidatorInterface          $validator,
-        Certificate $signInAccept
     ): JsonResponse
     {
         $credentialKey = $request->get('email');
@@ -120,7 +119,7 @@ class AuthController extends AbstractController
 
         $user = $auth->getUser();
         if ($passwordHashTool->isPasswordValid($user, $password)) {
-            return $this->json($signInAccept->withUser($user));
+            return $this->json(['certificate' => $certificate->withUser($user)]);
         }
 
         return $this->jsonErrors(['message' => '账号或密码不正确']);

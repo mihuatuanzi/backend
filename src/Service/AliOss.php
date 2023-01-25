@@ -18,7 +18,7 @@ class AliOss implements ObjectStorage
     )
     {
         $accessKeyId = $parameterBag->get('env.oss.ali.access_key_id');
-        $accessKeySecret = $parameterBag->get('env.oss.ali.access_key_secret');
+        $accessKeySecret = file_get_contents($parameterBag->get('env.oss.ali.access_key_secret_file'));
         $endpoint = $parameterBag->get('env.oss.ali.endpoint');
         $this->ossClient = new OssClient($accessKeyId, $accessKeySecret, $endpoint);
     }
@@ -31,8 +31,16 @@ class AliOss implements ObjectStorage
     /**
      * @throws OssException
      */
-    public function put(string $object, string $file): void
+    public function put(
+        string $object,
+        string $file,
+        string $contentType,
+        string $objectAcl = OssClient::OSS_ACL_TYPE_PUBLIC_READ
+    ): void
     {
-        $this->ossClient->uploadFile(self::BUCKET, $object, $file);
+        $this->ossClient->uploadFile(self::BUCKET, $object, $file, [
+            OssClient::OSS_HEADERS => [OssClient::OSS_OBJECT_ACL => $objectAcl],
+            OssClient::OSS_CONTENT_TYPE => $contentType
+        ]);
     }
 }

@@ -16,6 +16,8 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
+    private const AVATAR_BASE_URL = 'https://mihuatuanzi-backend.oss-cn-hangzhou.aliyuncs.com/';
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -141,7 +143,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getAvatar(): ?string
     {
-        return $this->avatar;
+        return $this->avatar ? self::AVATAR_BASE_URL . $this->avatar : null;
     }
 
     public function setAvatar(?string $avatar): self
@@ -201,7 +203,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         // If you store any temporary, sensitive data on the user, clear it here
         // $this->plainPassword = null;
-        $this->password = null;
     }
 
     /**
