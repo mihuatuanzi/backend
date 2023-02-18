@@ -143,9 +143,6 @@ class AuthController extends AbstractController
         UserRepository $userRepository,
     ): JsonResponse
     {
-        $session = $request->getSession();
-        $session->set('test_key1', 123);
-        echo $session->getId();exit;
         $refreshToken = $request->get('refresh_token');
         if (!$refreshToken) {
             return $this->jsonErrors(['message' => 'Invalid credentials.'], 401);
