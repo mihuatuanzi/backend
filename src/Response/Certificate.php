@@ -7,7 +7,7 @@ use App\Service\Authentic;
 
 class Certificate
 {
-    public string $access_token;
+    public string $token;
     public string $refresh_token;
     public int $expired_time;
     public int $refresh_time;
@@ -15,7 +15,7 @@ class Certificate
     public UserSummary $user_summary;
 
     public function __construct(
-        private readonly Authentic $authentic,
+        private readonly Authentic   $authentic,
         private readonly UserSummary $userSummary
     )
     {
@@ -24,7 +24,7 @@ class Certificate
     public function withUser(User $user): self
     {
         [$accessToken, $refreshToken, $expiredTime, $refreshTime] = $this->authentic->makeAccessToken($user);
-        $this->access_token = $accessToken;
+        $this->token = $accessToken;
         $this->refresh_token = $refreshToken;
         $this->expired_time = $expiredTime;
         $this->refresh_time = $refreshTime;

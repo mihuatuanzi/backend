@@ -2,6 +2,8 @@ version: "3.9"
 services:
   app:
     image: seanscraft/com.mihuatuanzi.backend.app:dev
+    depends_on:
+        - cache
     volumes:
       - .:/var/www/app
       - ./deploy/php/php-development.ini:/usr/local/etc/php/php.ini

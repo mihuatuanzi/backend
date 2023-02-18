@@ -16,12 +16,14 @@ use Symfony\Component\Validator\Constraints as Assert;
 readonly class Authentic
 {
     private const ACCESS_TOKEN_EXPIRED = 3600 * 2;
+    private const REFRESH_TOKEN_EXPIRED = 24 * 3600;
+    private const VERIFY_TOKEN_EXPIRED = 30 * 60;
 
     public function __construct(
         private ValidatorInterface    $validator,
         private EmailDelivery         $email,
         private UrlGeneratorInterface $router,
-        private ParameterBagInterface $parameterBag,
+        private ParameterBagInterface $parameterBag
     )
     {
     }
@@ -52,6 +54,7 @@ readonly class Authentic
         ];
         $accessToken = JWT::encode($payload, $privateKey, 'RS256');
         $payload['nbf'] = $expiredTime - floor(self::ACCESS_TOKEN_EXPIRED / 2);
+        $payload['exp'] = $expiredTime + self::REFRESH_TOKEN_EXPIRED;
         $refreshToken = JWT::encode($payload, $privateKey, 'RS256');
         return [$accessToken, $refreshToken, $expiredTime, $payload['nbf']];
     }
@@ -63,7 +66,7 @@ readonly class Authentic
             'iss' => 'mihuatuanzi.com',
             'aud' => 'mihuatuanzi.com',
             'iat' => time(),
-            'exp' => time() + 30 * 60,
+            'exp' => time() + self::VERIFY_TOKEN_EXPIRED,
             'email' => $email,
             'scopes' => ['auth_verify_email_and_set_pwd']
         ];
@@ -84,7 +87,7 @@ readonly class Authentic
         $publicKey = file_get_contents($this->parameterBag->get('app.secret.public'));
         try {
             $decoded = JWT::decode($jwtToken, new Key($publicKey, 'RS256'));
-        } catch (Exception) {
+        } catch (Exception $e) {
             return null;
         }
         return (array)$decoded;

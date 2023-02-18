@@ -89,7 +89,7 @@ class AuthController extends AbstractController
         return $this->json(['message' => 'Succeed']);
     }
 
-    #[Route('/auth/sign-in-by-email', name: 'sign_in_by_email', methods: ['POST'])]
+    #[Route('/auth/sign-in-by-email', name: 'auth_sign_in_by_email', methods: ['POST'])]
     public function signInByEmail(
         Request                     $request,
         Authentic                   $authentic,
@@ -126,9 +126,36 @@ class AuthController extends AbstractController
 
         if ($passwordHashTool->isPasswordValid($user, $password)) {
 //            $userRepository->increaseExp($user);
+            if ($request->isXmlHttpRequest()) {
+                $request->getSession()->set('user_identifier', $user->getUserIdentifier());
+            }
             return $this->json(['certificate' => $certificate->withUser($user)]);
         }
 
         return $this->jsonErrors(['message' => '账号或密码不正确']);
+    }
+
+    #[Route('/auth/refresh-token', name: 'auth_refresh_token', methods: ['POST'])]
+    public function refreshToken(
+        Request        $request,
+        Authentic      $authentic,
+        Certificate    $certificate,
+        UserRepository $userRepository,
+    ): JsonResponse
+    {
+        $session = $request->getSession();
+        $session->set('test_key1', 123);
+        echo $session->getId();exit;
+        $refreshToken = $request->get('refresh_token');
+        if (!$refreshToken) {
+            return $this->jsonErrors(['message' => 'Invalid credentials.'], 401);
+        }
+        $payload = $authentic->decodeJwtToken($refreshToken);
+        if ($payload) {
+            if ($user = $userRepository->findOneBy(['unique_id' => $payload['sub']])) {
+                return $this->json(['certificate' => $certificate->withUser($user)]);
+            }
+        }
+        return $this->jsonErrors(['message' => 'Invalid credentials.'], 401);
     }
 }

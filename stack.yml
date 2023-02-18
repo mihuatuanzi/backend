@@ -9,8 +9,6 @@ services:
         deploy:
             update_config:
                 order: start-first
-        depends_on:
-            - cache
         secrets:
             - source: mihuatuanzi_app_rsa_private
               target: /home/www-data/secret/mihuatuanzi/app_rsa.private.pem
