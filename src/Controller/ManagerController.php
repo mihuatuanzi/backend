@@ -2,12 +2,10 @@
 
 namespace App\Controller;
 
-use App\Entity\User;
 use App\Repository\UserRepository;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 class ManagerController extends AbstractController
@@ -17,7 +15,7 @@ class ManagerController extends AbstractController
      */
     #[IsGranted('ROLE_SUPER_USER')]
     #[Route('/manager/set-users-roles', methods: ['POST'])]
-    public function setRole(
+    public function setUsersRoles(
         Request              $request,
         UserRepository       $userRepository
     ): JsonResponse

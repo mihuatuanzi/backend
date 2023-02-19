@@ -87,6 +87,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(mappedBy: 'user_id', targetEntity: Dumpling::class, orphanRemoval: true)]
     private Collection $dumplings;
 
+    #[ORM\OneToOne(mappedBy: 'user', cascade: ['persist', 'remove'])]
+    private ?UserState $userState = null;
+
     public function __construct()
     {
         $this->authentications = new ArrayCollection();
@@ -323,6 +326,23 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
                 $dumpling->setUser(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getUserState(): ?UserState
+    {
+        return $this->userState;
+    }
+
+    public function setUserState(UserState $userState): self
+    {
+        // set the owning side of the relation if necessary
+        if ($userState->getUser() !== $this) {
+            $userState->setUser($this);
+        }
+
+        $this->userState = $userState;
 
         return $this;
     }

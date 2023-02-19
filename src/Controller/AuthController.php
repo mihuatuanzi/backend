@@ -8,6 +8,7 @@ use App\Config\UserType;
 use App\Entity\User;
 use App\Repository\AuthenticationRepository;
 use App\Repository\UserRepository;
+use App\Repository\UserStateRepository;
 use App\Response\Certificate;
 use App\Service\Authentic;
 use App\Validator\SuppressDuplicateCredential;
@@ -62,6 +63,7 @@ class AuthController extends AbstractController
         Request                     $request,
         Authentic                   $authentic,
         UserRepository              $userRepository,
+        UserStateRepository         $userStateRepository,
         AuthenticationRepository    $authenticationRepository,
         UserPasswordHasherInterface $passwordHashTool,
     ): JsonResponse
@@ -83,6 +85,7 @@ class AuthController extends AbstractController
             $user = $auth->getUser();
             $user->setPassword($passwordHashTool->hashPassword($user, $password));
             $userRepository->save($user, true);
+            $userStateRepository->save($user->getUserState());
         }
 
         $authenticationRepository->save($auth, true);

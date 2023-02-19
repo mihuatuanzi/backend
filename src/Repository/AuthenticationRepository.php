@@ -8,7 +8,7 @@ use App\Entity\Authentication;
 use DateTimeImmutable;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
-use Symfony\Component\Security\Http\Authenticator\Passport\Badge\UserBadge;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
 /**
  * @extends ServiceEntityRepository<Authentication>
@@ -20,7 +20,10 @@ use Symfony\Component\Security\Http\Authenticator\Passport\Badge\UserBadge;
  */
 class AuthenticationRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
+    public function __construct(
+        ManagerRegistry       $registry,
+        private readonly ParameterBagInterface $parameterBag
+    )
     {
         parent::__construct($registry, Authentication::class);
     }
@@ -54,7 +57,9 @@ class AuthenticationRepository extends ServiceEntityRepository
             $auth->setCredentialKey($email);
             $auth->setCreatedAt(new DateTimeImmutable());
             // User 必须在 Auth 之前保存
-            $this->getEntityManager()->persist($auth->initializeUser($userType));
+            $user = $auth->initializeUser($userType);
+            $user->getUserState()->setAppVersion($this->parameterBag->get('env.app_version'));
+            $this->getEntityManager()->persist($user);
         }
         return $auth;
     }

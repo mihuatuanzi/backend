@@ -139,6 +139,11 @@ class Authentication
         $user->setExp(0);
         $user->setStatus(User::STATUS_ACTIVE);
         $user->setCreatedAt($this->getCreatedAt());
+
+        $userState = new UserState();
+        $userState->setUser($user);
+
+        $user->setUserState($userState);
         $this->setUser($user);
         return $user;
     }
