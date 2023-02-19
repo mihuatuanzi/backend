@@ -19,8 +19,7 @@ class ManagerController extends AbstractController
     #[Route('/manager/set-users-roles', methods: ['POST'])]
     public function setRole(
         Request              $request,
-        UserRepository       $userRepository,
-        #[CurrentUser] ?User $user,
+        UserRepository       $userRepository
     ): JsonResponse
     {
         $userIdentifiers = (array)$request->get('user_identifiers');
