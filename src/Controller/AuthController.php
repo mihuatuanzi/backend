@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Config\AuthCredentialType;
 use App\Config\SendVerificationScene;
+use App\Config\UserType;
 use App\Entity\User;
 use App\Repository\AuthenticationRepository;
 use App\Repository\UserRepository;
@@ -77,7 +78,7 @@ class AuthController extends AbstractController
             return $this->jsonErrors(['message' => '无法激活账户']);
         }
 
-        $auth = $authenticationRepository->findOrCreateByEmail($email);
+        $auth = $authenticationRepository->findOrCreateByEmail($email, UserType::Person);
         if ($password) {
             $user = $auth->getUser();
             $user->setPassword($passwordHashTool->hashPassword($user, $password));

@@ -3,7 +3,7 @@
 namespace App\Entity;
 
 use App\Config\UserGenderType;
-use App\Config\UserStatus;
+use App\Config\UserType;
 use App\Repository\UserRepository;
 use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -31,6 +31,15 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Assert\Uuid]
     #[ORM\Column(length: 64, unique: true)]
     private ?string $unique_id = null;
+
+    #[Assert\NotBlank(message: '值不能为空')]
+    #[Assert\Choice(choices: [
+        UserType::Person,
+        UserType::Bot,
+        UserType::Client
+    ], message: '用户类型不正确')]
+    #[ORM\Column(type: Types::SMALLINT, enumType: UserType::class)]
+    private UserType $type = UserType::Person;
 
     #[ORM\Column(length: 128, nullable: true)]
     private ?string $password = null;
@@ -109,6 +118,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getUserIdentifier(): string
     {
         return (string) $this->unique_id;
+    }
+
+    public function getType(): ?UserType
+    {
+        return $this->type;
+    }
+
+    public function setType(UserType $type): self
+    {
+        $this->type = $type;
+
+        return $this;
     }
 
     public function getPassword(): ?string

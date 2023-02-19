@@ -9,6 +9,7 @@ use App\Repository\AuthenticationRepository;
 use App\Repository\UserRepository;
 use App\Response\UserSummary;
 use App\Service\Authentic;
+use App\Strategy\QueryList;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -25,10 +26,15 @@ class UserController extends AbstractController
         Request        $request,
         UserSummary    $userSummary,
         UserRepository $userRepository,
+        QueryList      $queryListStrategy
     ): JsonResponse
     {
         $keywords = $request->get('keywords');
-        $users = $userRepository->searchByKeywords($keywords);
+        $builder = $userRepository->searchByKeywords($keywords);
+        $builder = $queryListStrategy->withRequest($request, $builder, [
+            'user_exp' => 'u.exp'
+        ]);
+        $users = $builder->getQuery()->getResult();
         return $this->json([
             'user_summaries' => array_map(fn($u) => $userSummary->withUser($u), $users)
         ]);

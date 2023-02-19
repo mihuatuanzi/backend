@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Config\AuthCredentialType;
+use App\Config\UserType;
 use App\Repository\AuthenticationRepository;
 use App\Validator\SuppressDuplicateCredential;
 use DateTimeImmutable;
@@ -129,11 +130,12 @@ class Authentication
         return $this;
     }
 
-    public function initializeUser(): User
+    public function initializeUser(UserType $userType): User
     {
         $user = new User();
         $user->setUniqueId(Uuid::uuid7());
         $user->setNickname($this->getCredentialKey());
+        $user->setType($userType);
         $user->setExp(0);
         $user->setStatus(User::STATUS_ACTIVE);
         $user->setCreatedAt($this->getCreatedAt());

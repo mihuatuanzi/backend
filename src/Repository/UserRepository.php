@@ -4,6 +4,8 @@ namespace App\Repository;
 
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\Query;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\Security\Http\Authenticator\Passport\Badge\UserBadge;
 
@@ -40,15 +42,13 @@ class UserRepository extends ServiceEntityRepository
         }
     }
 
-    public function searchByKeywords(string $keywords)
+    public function searchByKeywords(string $keywords, string $alias = 'u'): QueryBuilder
     {
-        return $this->createQueryBuilder('u')
-            ->where('u.nickname like :val')
+        $query = $this->createQueryBuilder($alias);
+        return $query
+            ->where($query->expr()->like($alias . '.nickname', ':val'))
             ->setParameter('val', "%$keywords%")
-            ->orderBy('u.id', 'ASC')
-            ->setMaxResults(20)
-            ->getQuery()
-            ->getResult();
+            ->orderBy($alias . '.id', 'ASC');
     }
 
     public function increaseExp(User $entity, int $exp = 1)
@@ -63,6 +63,20 @@ class UserRepository extends ServiceEntityRepository
             ])
             ->getQuery()
             ->execute();
+    }
+
+    public function setRolesByIdentifiers(array $identifiers, array $roles)
+    {
+        $query = $this->createQueryBuilder('u');
+        $query
+            ->update()
+            ->set('u.roles', ':roles')
+            ->where($query->expr()->in('u.unique_id', ':identifiers'))
+            ->getQuery()
+            ->execute([
+                'identifiers' => $identifiers,
+                'roles' => json_encode($roles)
+            ]);
     }
 
 

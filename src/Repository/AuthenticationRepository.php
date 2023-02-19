@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Config\AuthCredentialType;
+use App\Config\UserType;
 use App\Entity\Authentication;
 use DateTimeImmutable;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -42,7 +43,7 @@ class AuthenticationRepository extends ServiceEntityRepository
         }
     }
 
-    public function findOrCreateByEmail(string $email): Authentication
+    public function findOrCreateByEmail(string $email, UserType $userType): Authentication
     {
         $auth = $this->findOneBy([
             'credential_type' => AuthCredentialType::Email, 'credential_key' => $email
@@ -53,7 +54,7 @@ class AuthenticationRepository extends ServiceEntityRepository
             $auth->setCredentialKey($email);
             $auth->setCreatedAt(new DateTimeImmutable());
             // User 必须在 Auth 之前保存
-            $this->getEntityManager()->persist($auth->initializeUser());
+            $this->getEntityManager()->persist($auth->initializeUser($userType));
         }
         return $auth;
     }
