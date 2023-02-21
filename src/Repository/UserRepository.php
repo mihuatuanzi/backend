@@ -2,6 +2,7 @@
 
 namespace App\Repository;
 
+use App\Entity\Dumpling;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\Query;
@@ -77,6 +78,11 @@ class UserRepository extends ServiceEntityRepository
                 'identifiers' => $identifiers,
                 'roles' => json_encode($roles)
             ]);
+    }
+
+    public function hasDumpling(User $user, Dumpling $entity): bool
+    {
+        return $entity->getUser()->getId() === $user->getId();
     }
 
 

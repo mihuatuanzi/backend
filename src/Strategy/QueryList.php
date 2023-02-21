@@ -8,10 +8,6 @@ use Symfony\Component\HttpFoundation\RequestStack;
 
 class QueryList
 {
-    public function __construct(private RequestStack $request)
-    {
-    }
-
     public function withRequest(
         Request $request,
         QueryBuilder $builder,

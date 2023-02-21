@@ -6,6 +6,7 @@
 parameters:
     app.name.zh: '米花团子'
     app.name.en: 'Mihuatuanzi'
+    app.prefix: 'mh'
     app.secret.private: '%env(APP_SECRET_PRIVATE)%'
     app.secret.public: '%env(APP_SECRET_PUBLIC)%'
     env.app_env: '%env(APP_ENV)%'
@@ -39,7 +40,7 @@ services:
     Symfony\Component\HttpFoundation\Session\Storage\Handler\RedisSessionHandler:
         arguments:
             - '@Redis'
-            - prefix: mi_session_
+            - prefix: mh_session_
             - ttl: 86400
 
     # add more service definitions when explicit configuration is needed

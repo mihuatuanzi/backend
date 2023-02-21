@@ -137,7 +137,7 @@ class UserController extends AbstractController
     public function unbindingAuthentication(
         Request                  $request,
         AuthenticationRepository $authRepository,
-        #[CurrentUser] User      $user,
+        #[CurrentUser] ?User      $user,
     ): JsonResponse
     {
         $id = $request->get('id');

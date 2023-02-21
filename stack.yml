@@ -9,6 +9,12 @@ services:
         deploy:
             update_config:
                 order: start-first
+        environment:
+            APP_SECRET_PRIVATE: /home/www-data/secret/mihuatuanzi/app_rsa.private.pem
+            APP_SECRET_PUBLIC: /home/www-data/secret/mihuatuanzi/app_rsa.public.pem
+            OSS_ALI_ACCESS_KEY_ID: LTAI5tQKMg635R79PVDP1jtH
+            OSS_ALI_ACCESS_KEY_SECRET_FILE: /home/www-data/secret/mihuatuanzi/app_ali_access_key_secret.key
+            OSS_ALI_ENDPOINT: oss-cn-hangzhou.aliyuncs.com
         secrets:
             - source: mihuatuanzi_app_rsa_private
               target: /home/www-data/secret/mihuatuanzi/app_rsa.private.pem
