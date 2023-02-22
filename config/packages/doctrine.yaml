@@ -16,6 +16,9 @@ doctrine:
                 dir: '%kernel.project_dir%/src/Entity'
                 prefix: 'App\Entity'
                 alias: App
+        dql:
+            string_functions:
+                find_in_set: DoctrineExtensions\Query\Mysql\FindInSet
 
 when@test:
     doctrine:

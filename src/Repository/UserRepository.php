@@ -43,13 +43,15 @@ class UserRepository extends ServiceEntityRepository
         }
     }
 
-    public function searchByKeywords(string $keywords, string $alias = 'u'): QueryBuilder
+    public function searchByKeywords(?string $keywords, string $alias = 'u'): QueryBuilder
     {
         $query = $this->createQueryBuilder($alias);
-        return $query
-            ->where($query->expr()->like($alias . '.nickname', ':val'))
-            ->setParameter('val', "%$keywords%")
-            ->orderBy($alias . '.id', 'ASC');
+        if ($keywords) {
+            $query = $query
+                ->where($query->expr()->like($alias . '.nickname', ':val'))
+                ->setParameter('val', "%$keywords%");
+        }
+        return $query->orderBy($alias . '.id', 'ASC');
     }
 
     public function increaseExp(User $entity, int $exp = 1)

@@ -90,10 +90,22 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToOne(mappedBy: 'user', cascade: ['persist', 'remove'])]
     private ?UserState $userState = null;
 
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: DumplingApplicants::class, orphanRemoval: true)]
+    private Collection $dumplingApplicants;
+
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: DumplingMember::class, orphanRemoval: true)]
+    private Collection $dumplingMembers;
+
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: Form::class)]
+    private Collection $forms;
+
     public function __construct()
     {
         $this->authentications = new ArrayCollection();
         $this->dumplings = new ArrayCollection();
+        $this->dumplingApplicants = new ArrayCollection();
+        $this->dumplingMembers = new ArrayCollection();
+        $this->forms = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -343,6 +355,96 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         }
 
         $this->userState = $userState;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, DumplingApplicants>
+     */
+    public function getDumplingApplicants(): Collection
+    {
+        return $this->dumplingApplicants;
+    }
+
+    public function addDumplingApplicant(DumplingApplicants $dumplingApplicant): self
+    {
+        if (!$this->dumplingApplicants->contains($dumplingApplicant)) {
+            $this->dumplingApplicants->add($dumplingApplicant);
+            $dumplingApplicant->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeDumplingApplicant(DumplingApplicants $dumplingApplicant): self
+    {
+        if ($this->dumplingApplicants->removeElement($dumplingApplicant)) {
+            // set the owning side to null (unless already changed)
+            if ($dumplingApplicant->getUser() === $this) {
+                $dumplingApplicant->setUser(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, DumplingMember>
+     */
+    public function getDumplingMembers(): Collection
+    {
+        return $this->dumplingMembers;
+    }
+
+    public function addDumplingMember(DumplingMember $dumplingMember): self
+    {
+        if (!$this->dumplingMembers->contains($dumplingMember)) {
+            $this->dumplingMembers->add($dumplingMember);
+            $dumplingMember->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeDumplingMember(DumplingMember $dumplingMember): self
+    {
+        if ($this->dumplingMembers->removeElement($dumplingMember)) {
+            // set the owning side to null (unless already changed)
+            if ($dumplingMember->getUser() === $this) {
+                $dumplingMember->setUser(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Form>
+     */
+    public function getForms(): Collection
+    {
+        return $this->forms;
+    }
+
+    public function addForm(Form $form): self
+    {
+        if (!$this->forms->contains($form)) {
+            $this->forms->add($form);
+            $form->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeForm(Form $form): self
+    {
+        if ($this->forms->removeElement($form)) {
+            // set the owning side to null (unless already changed)
+            if ($form->getUser() === $this) {
+                $form->setUser(null);
+            }
+        }
 
         return $this;
     }

@@ -7,11 +7,9 @@ use App\Entity\User;
 use App\Repository\DumplingRepository;
 use App\Repository\UserRepository;
 use App\Response\DumplingSummary;
-use App\Response\UserSummary;
 use App\Strategy\QueryList;
 use DateTime;
 use DateTimeImmutable;
-use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\Mapping\ClassMetadataInfo;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -89,5 +87,16 @@ class DumplingController extends AbstractController
         return $this->json([
             'dumplings' => array_map(fn($d) => $dumplingSummary->withDumpling($d), $list)
         ]);
+    }
+
+    #[IsGranted('ROLE_USER')]
+    #[Route('/dumpling/join', name: 'app_dumpling_join')]
+    public function join(
+        Request              $request,
+        DumplingRepository   $dumplingRepository,
+        #[CurrentUser] ?User $user,
+    )
+    {
+        $dumplingId = $request->get('dumpling_id');
     }
 }

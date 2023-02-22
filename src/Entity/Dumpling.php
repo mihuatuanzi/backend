@@ -5,6 +5,8 @@ namespace App\Entity;
 use App\Repository\DumplingRepository;
 use DateTimeImmutable;
 use DateTimeInterface;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -42,6 +44,18 @@ class Dumpling
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private ?DateTimeInterface $updated_at = null;
+
+    #[ORM\OneToMany(mappedBy: 'dumpling', targetEntity: DumplingApplicants::class, orphanRemoval: true)]
+    private Collection $dumplingApplicants;
+
+    #[ORM\OneToMany(mappedBy: 'dumpling', targetEntity: DumplingMember::class, orphanRemoval: true)]
+    private Collection $dumplingMembers;
+
+    public function __construct()
+    {
+        $this->dumplingApplicants = new ArrayCollection();
+        $this->dumplingMembers = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -140,6 +154,66 @@ class Dumpling
     public function setUpdatedAt(DateTimeInterface $updated_at): self
     {
         $this->updated_at = $updated_at;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, DumplingApplicants>
+     */
+    public function getDumplingApplicants(): Collection
+    {
+        return $this->dumplingApplicants;
+    }
+
+    public function addDumplingApplicant(DumplingApplicants $dumplingApplicant): self
+    {
+        if (!$this->dumplingApplicants->contains($dumplingApplicant)) {
+            $this->dumplingApplicants->add($dumplingApplicant);
+            $dumplingApplicant->setDumpling($this);
+        }
+
+        return $this;
+    }
+
+    public function removeDumplingApplicant(DumplingApplicants $dumplingApplicant): self
+    {
+        if ($this->dumplingApplicants->removeElement($dumplingApplicant)) {
+            // set the owning side to null (unless already changed)
+            if ($dumplingApplicant->getDumpling() === $this) {
+                $dumplingApplicant->setDumpling(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, DumplingMember>
+     */
+    public function getDumplingMembers(): Collection
+    {
+        return $this->dumplingMembers;
+    }
+
+    public function addDumplingMember(DumplingMember $dumplingMember): self
+    {
+        if (!$this->dumplingMembers->contains($dumplingMember)) {
+            $this->dumplingMembers->add($dumplingMember);
+            $dumplingMember->setDumpling($this);
+        }
+
+        return $this;
+    }
+
+    public function removeDumplingMember(DumplingMember $dumplingMember): self
+    {
+        if ($this->dumplingMembers->removeElement($dumplingMember)) {
+            // set the owning side to null (unless already changed)
+            if ($dumplingMember->getDumpling() === $this) {
+                $dumplingMember->setDumpling(null);
+            }
+        }
 
         return $this;
     }

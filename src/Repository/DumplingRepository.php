@@ -23,17 +23,19 @@ class DumplingRepository extends ServiceEntityRepository
         parent::__construct($registry, Dumpling::class);
     }
 
-    public function searchByKeywords(string $keywords, string $alias = 'd'): QueryBuilder
+    public function searchByKeywords(?string $keywords, string $alias = 'd'): QueryBuilder
     {
         $query = $this->createQueryBuilder($alias);
-        return $query
-            ->where($query->expr()->like($alias . '.title', ':t'))
-            ->orWhere($query->expr()->like($alias . '.subtitle', ':subtitle'))
-//            ->orWhere("find_in_set(:tag, $alias.tag)")
-            ->setParameter('t', "%$keywords%")
-            ->setParameter('subtitle', "%$keywords%")
-//            ->setParameter('tag', $keywords)
-            ->orderBy($alias . '.id', 'ASC');
+        if ($keywords) {
+            $query = $query
+                ->where($query->expr()->like($alias . '.title', ':t'))
+                ->orWhere($query->expr()->like($alias . '.subtitle', ':subtitle'))
+                ->orWhere("find_in_set(:tag, $alias.tag) <> 0")
+                ->setParameter('t', "%$keywords%")
+                ->setParameter('subtitle', "%$keywords%")
+                ->setParameter('tag', $keywords);
+        }
+        return $query->orderBy($alias . '.id', 'ASC');
     }
 
     public function save(Dumpling $entity, bool $flush = false): void
