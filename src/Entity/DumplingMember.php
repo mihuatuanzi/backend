@@ -6,6 +6,7 @@ use App\Repository\DumplingMemberRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
+#[ORM\UniqueConstraint(columns: ['dumpling_id', 'user_id'])]
 #[ORM\Entity(repositoryClass: DumplingMemberRepository::class)]
 class DumplingMember
 {
@@ -25,7 +26,7 @@ class DumplingMember
     #[ORM\Column(length: 64)]
     private ?string $nickname = null;
 
-    #[ORM\Column(type: Types::ARRAY)]
+    #[ORM\Column(type: Types::JSON)]
     private array $roles = [];
 
     #[ORM\Column(type: Types::BIGINT)]
@@ -80,7 +81,11 @@ class DumplingMember
 
     public function getRoles(): array
     {
-        return $this->roles;
+        $roles = $this->roles;
+        // guarantee every user at least has ROLE_USER
+        $roles[] = 'ROLE_USER';
+
+        return array_unique($roles);
     }
 
     public function setRoles(array $roles): self
