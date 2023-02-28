@@ -34,9 +34,21 @@ class Form
     #[ORM\OneToMany(mappedBy: 'form', targetEntity: FormField::class, orphanRemoval: true)]
     private Collection $formFields;
 
+    #[ORM\OneToMany(mappedBy: 'form', targetEntity: FormSubmission::class, orphanRemoval: true)]
+    private Collection $formSubmissions;
+
+    #[ORM\OneToMany(mappedBy: 'form', targetEntity: DumplingRequirement::class)]
+    private Collection $dumplingRequirements;
+
+    #[ORM\OneToMany(mappedBy: 'form', targetEntity: FormValidator::class)]
+    private Collection $formValidators;
+
     public function __construct()
     {
         $this->formFields = new ArrayCollection();
+        $this->formSubmissions = new ArrayCollection();
+        $this->dumplingRequirements = new ArrayCollection();
+        $this->formValidators = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -128,6 +140,96 @@ class Form
             // set the owning side to null (unless already changed)
             if ($formField->getForm() === $this) {
                 $formField->setForm(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, FormSubmission>
+     */
+    public function getFormSubmissions(): Collection
+    {
+        return $this->formSubmissions;
+    }
+
+    public function addFormSubmission(FormSubmission $formSubmission): self
+    {
+        if (!$this->formSubmissions->contains($formSubmission)) {
+            $this->formSubmissions->add($formSubmission);
+            $formSubmission->setForm($this);
+        }
+
+        return $this;
+    }
+
+    public function removeFormSubmission(FormSubmission $formSubmission): self
+    {
+        if ($this->formSubmissions->removeElement($formSubmission)) {
+            // set the owning side to null (unless already changed)
+            if ($formSubmission->getForm() === $this) {
+                $formSubmission->setForm(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, DumplingRequirement>
+     */
+    public function getDumplingRequirements(): Collection
+    {
+        return $this->dumplingRequirements;
+    }
+
+    public function addDumplingRequirement(DumplingRequirement $dumplingRequirement): self
+    {
+        if (!$this->dumplingRequirements->contains($dumplingRequirement)) {
+            $this->dumplingRequirements->add($dumplingRequirement);
+            $dumplingRequirement->setForm($this);
+        }
+
+        return $this;
+    }
+
+    public function removeDumplingRequirement(DumplingRequirement $dumplingRequirement): self
+    {
+        if ($this->dumplingRequirements->removeElement($dumplingRequirement)) {
+            // set the owning side to null (unless already changed)
+            if ($dumplingRequirement->getForm() === $this) {
+                $dumplingRequirement->setForm(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, FormValidator>
+     */
+    public function getFormValidators(): Collection
+    {
+        return $this->formValidators;
+    }
+
+    public function addFormValidator(FormValidator $formValidator): self
+    {
+        if (!$this->formValidators->contains($formValidator)) {
+            $this->formValidators->add($formValidator);
+            $formValidator->setForm($this);
+        }
+
+        return $this;
+    }
+
+    public function removeFormValidator(FormValidator $formValidator): self
+    {
+        if ($this->formValidators->removeElement($formValidator)) {
+            // set the owning side to null (unless already changed)
+            if ($formValidator->getForm() === $this) {
+                $formValidator->setForm(null);
             }
         }
 

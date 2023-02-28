@@ -2,28 +2,31 @@
 
 namespace App\Entity;
 
-use App\Repository\DumplingApplicantsRepository;
+use App\Repository\DumplingRequirementRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity(repositoryClass: DumplingApplicantsRepository::class)]
-class DumplingApplicants
+#[ORM\Entity(repositoryClass: DumplingRequirementRepository::class)]
+class DumplingRequirement
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(inversedBy: 'dumplingApplicants')]
+    #[ORM\ManyToOne(inversedBy: 'dumplingRequirements')]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?Form $form = null;
+
+    #[ORM\ManyToOne(inversedBy: 'dumplingRequirements')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Dumpling $dumpling = null;
 
-    #[ORM\ManyToOne(inversedBy: 'dumplingApplicants')]
-    #[ORM\JoinColumn(nullable: false)]
-    private ?User $user = null;
+    #[ORM\ManyToOne]
+    private ?FormValidator $form_validator = null;
 
-    #[ORM\Column(type: Types::SMALLINT)]
-    private ?int $status = null;
+    #[ORM\Column(length: 255)]
+    private ?string $name = null;
 
     #[ORM\Column]
     private ?\DateTimeImmutable $created_at = null;
@@ -34,6 +37,18 @@ class DumplingApplicants
     public function getId(): ?int
     {
         return $this->id;
+    }
+
+    public function getForm(): ?Form
+    {
+        return $this->form;
+    }
+
+    public function setForm(?Form $form): self
+    {
+        $this->form = $form;
+
+        return $this;
     }
 
     public function getDumpling(): ?Dumpling
@@ -48,26 +63,26 @@ class DumplingApplicants
         return $this;
     }
 
-    public function getUser(): ?User
+    public function getFormValidator(): ?FormValidator
     {
-        return $this->user;
+        return $this->form_validator;
     }
 
-    public function setUser(?User $user): self
+    public function setFormValidator(?FormValidator $form_validator): self
     {
-        $this->user = $user;
+        $this->form_validator = $form_validator;
 
         return $this;
     }
 
-    public function getStatus(): ?int
+    public function getName(): ?string
     {
-        return $this->status;
+        return $this->name;
     }
 
-    public function setStatus(int $status): self
+    public function setName(string $name): self
     {
-        $this->status = $status;
+        $this->name = $name;
 
         return $this;
     }

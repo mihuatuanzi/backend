@@ -90,7 +90,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToOne(mappedBy: 'user', cascade: ['persist', 'remove'])]
     private ?UserState $userState = null;
 
-    #[ORM\OneToMany(mappedBy: 'user', targetEntity: DumplingApplicants::class, orphanRemoval: true)]
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: DumplingApplicant::class, orphanRemoval: true)]
     private Collection $dumplingApplicants;
 
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: DumplingMember::class, orphanRemoval: true)]
@@ -99,6 +99,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Form::class)]
     private Collection $forms;
 
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: FormSubmission::class, orphanRemoval: true)]
+    private Collection $formSubmissions;
+
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: FormValidator::class)]
+    private Collection $formValidators;
+
     public function __construct()
     {
         $this->authentications = new ArrayCollection();
@@ -106,6 +112,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->dumplingApplicants = new ArrayCollection();
         $this->dumplingMembers = new ArrayCollection();
         $this->forms = new ArrayCollection();
+        $this->formSubmissions = new ArrayCollection();
+        $this->formValidators = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -360,14 +368,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     }
 
     /**
-     * @return Collection<int, DumplingApplicants>
+     * @return Collection<int, DumplingApplicant>
      */
     public function getDumplingApplicants(): Collection
     {
         return $this->dumplingApplicants;
     }
 
-    public function addDumplingApplicant(DumplingApplicants $dumplingApplicant): self
+    public function addDumplingApplicant(DumplingApplicant $dumplingApplicant): self
     {
         if (!$this->dumplingApplicants->contains($dumplingApplicant)) {
             $this->dumplingApplicants->add($dumplingApplicant);
@@ -377,7 +385,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function removeDumplingApplicant(DumplingApplicants $dumplingApplicant): self
+    public function removeDumplingApplicant(DumplingApplicant $dumplingApplicant): self
     {
         if ($this->dumplingApplicants->removeElement($dumplingApplicant)) {
             // set the owning side to null (unless already changed)
@@ -443,6 +451,66 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             // set the owning side to null (unless already changed)
             if ($form->getUser() === $this) {
                 $form->setUser(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, FormSubmission>
+     */
+    public function getFormSubmissions(): Collection
+    {
+        return $this->formSubmissions;
+    }
+
+    public function addFormSubmission(FormSubmission $formSubmission): self
+    {
+        if (!$this->formSubmissions->contains($formSubmission)) {
+            $this->formSubmissions->add($formSubmission);
+            $formSubmission->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeFormSubmission(FormSubmission $formSubmission): self
+    {
+        if ($this->formSubmissions->removeElement($formSubmission)) {
+            // set the owning side to null (unless already changed)
+            if ($formSubmission->getUser() === $this) {
+                $formSubmission->setUser(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, FormValidator>
+     */
+    public function getFormValidators(): Collection
+    {
+        return $this->formValidators;
+    }
+
+    public function addFormValidator(FormValidator $formValidator): self
+    {
+        if (!$this->formValidators->contains($formValidator)) {
+            $this->formValidators->add($formValidator);
+            $formValidator->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeFormValidator(FormValidator $formValidator): self
+    {
+        if ($this->formValidators->removeElement($formValidator)) {
+            // set the owning side to null (unless already changed)
+            if ($formValidator->getUser() === $this) {
+                $formValidator->setUser(null);
             }
         }
 

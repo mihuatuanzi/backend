@@ -2,26 +2,26 @@
 
 namespace App\Repository;
 
-use App\Entity\DumplingApplicants;
+use App\Entity\DumplingApplicant;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * @extends ServiceEntityRepository<DumplingApplicants>
+ * @extends ServiceEntityRepository<DumplingApplicant>
  *
- * @method DumplingApplicants|null find($id, $lockMode = null, $lockVersion = null)
- * @method DumplingApplicants|null findOneBy(array $criteria, array $orderBy = null)
- * @method DumplingApplicants[]    findAll()
- * @method DumplingApplicants[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @method DumplingApplicant|null find($id, $lockMode = null, $lockVersion = null)
+ * @method DumplingApplicant|null findOneBy(array $criteria, array $orderBy = null)
+ * @method DumplingApplicant[]    findAll()
+ * @method DumplingApplicant[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
-class DumplingApplicantsRepository extends ServiceEntityRepository
+class DumplingApplicantRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, DumplingApplicants::class);
+        parent::__construct($registry, DumplingApplicant::class);
     }
 
-    public function save(DumplingApplicants $entity, bool $flush = false): void
+    public function save(DumplingApplicant $entity, bool $flush = false): void
     {
         $this->getEntityManager()->persist($entity);
 
@@ -30,7 +30,7 @@ class DumplingApplicantsRepository extends ServiceEntityRepository
         }
     }
 
-    public function remove(DumplingApplicants $entity, bool $flush = false): void
+    public function remove(DumplingApplicant $entity, bool $flush = false): void
     {
         $this->getEntityManager()->remove($entity);
 

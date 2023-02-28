@@ -45,16 +45,20 @@ class Dumpling
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private ?DateTimeInterface $updated_at = null;
 
-    #[ORM\OneToMany(mappedBy: 'dumpling', targetEntity: DumplingApplicants::class, orphanRemoval: true)]
+    #[ORM\OneToMany(mappedBy: 'dumpling', targetEntity: DumplingApplicant::class, orphanRemoval: true)]
     private Collection $dumplingApplicants;
 
     #[ORM\OneToMany(mappedBy: 'dumpling', targetEntity: DumplingMember::class, orphanRemoval: true)]
     private Collection $dumplingMembers;
 
+    #[ORM\OneToMany(mappedBy: 'dumpling', targetEntity: DumplingRequirement::class, orphanRemoval: true)]
+    private Collection $dumplingRequirements;
+
     public function __construct()
     {
         $this->dumplingApplicants = new ArrayCollection();
         $this->dumplingMembers = new ArrayCollection();
+        $this->dumplingRequirements = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -159,14 +163,14 @@ class Dumpling
     }
 
     /**
-     * @return Collection<int, DumplingApplicants>
+     * @return Collection<int, DumplingApplicant>
      */
     public function getDumplingApplicants(): Collection
     {
         return $this->dumplingApplicants;
     }
 
-    public function addDumplingApplicant(DumplingApplicants $dumplingApplicant): self
+    public function addDumplingApplicant(DumplingApplicant $dumplingApplicant): self
     {
         if (!$this->dumplingApplicants->contains($dumplingApplicant)) {
             $this->dumplingApplicants->add($dumplingApplicant);
@@ -176,7 +180,7 @@ class Dumpling
         return $this;
     }
 
-    public function removeDumplingApplicant(DumplingApplicants $dumplingApplicant): self
+    public function removeDumplingApplicant(DumplingApplicant $dumplingApplicant): self
     {
         if ($this->dumplingApplicants->removeElement($dumplingApplicant)) {
             // set the owning side to null (unless already changed)
@@ -212,6 +216,36 @@ class Dumpling
             // set the owning side to null (unless already changed)
             if ($dumplingMember->getDumpling() === $this) {
                 $dumplingMember->setDumpling(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, DumplingRequirement>
+     */
+    public function getDumplingRequirements(): Collection
+    {
+        return $this->dumplingRequirements;
+    }
+
+    public function addDumplingRequirement(DumplingRequirement $dumplingRequirement): self
+    {
+        if (!$this->dumplingRequirements->contains($dumplingRequirement)) {
+            $this->dumplingRequirements->add($dumplingRequirement);
+            $dumplingRequirement->setDumpling($this);
+        }
+
+        return $this;
+    }
+
+    public function removeDumplingRequirement(DumplingRequirement $dumplingRequirement): self
+    {
+        if ($this->dumplingRequirements->removeElement($dumplingRequirement)) {
+            // set the owning side to null (unless already changed)
+            if ($dumplingRequirement->getDumpling() === $this) {
+                $dumplingRequirement->setDumpling(null);
             }
         }
 
