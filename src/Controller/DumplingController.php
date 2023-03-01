@@ -3,8 +3,11 @@
 namespace App\Controller;
 
 use App\Entity\Dumpling;
+use App\Entity\DumplingRequirement;
+use App\Entity\Form;
 use App\Entity\User;
 use App\Repository\DumplingRepository;
+use App\Repository\DumplingRequirementRepository;
 use App\Repository\UserRepository;
 use App\Response\DumplingSummary;
 use App\Strategy\QueryList;
@@ -21,8 +24,8 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 class DumplingController extends AbstractController
 {
     #[IsGranted('ROLE_USER')]
-    #[Route('/dumpling/create', name: 'app_dumpling_create')]
-    public function create(
+    #[Route('/dumpling/save', methods: ['POST'])]
+    public function save(
         Request              $request,
         UserRepository       $userRepository,
         DumplingRepository   $dumplingRepository,
@@ -87,6 +90,47 @@ class DumplingController extends AbstractController
         return $this->json([
             'dumplings' => array_map(fn($d) => $dumplingSummary->withDumpling($d), $list)
         ]);
+    }
+
+    #[IsGranted('ROLE_USER')]
+    #[Route('/dumpling/save-requirement', methods: ['POST'])]
+    public function saveRequirement(
+        Request                       $request,
+        ValidatorInterface            $validator,
+        DumplingRepository            $dumplingRepository,
+        DumplingRequirementRepository $dumplingRequirementRepository,
+    ): JsonResponse
+    {
+        $dumplingId = $request->get('dumpling_id');
+        $dumpling = $dumplingRepository->findOneBy(['id' => $dumplingId]);
+        if (!$dumpling) {
+            return $this->jsonErrors(['_violations' => ['找不到资源']], 404);
+        }
+        if ($requirementId = $request->get('requirement_id')) {
+            $dumplingRequirement = $dumplingRequirementRepository->findOneBy(['id' => $requirementId]);
+            if (!$dumplingRequirement) {
+                return $this->jsonErrors(['_violations' => ['找不到资源']], 404);
+            }
+            if ($dumplingRequirement->getDumpling()->getId() !== $dumplingId) {
+                return $this->jsonErrors(['_violations' => ['禁止转让 Requirement']], 403);
+            }
+        } else {
+            $dumplingRequirement = new DumplingRequirement();
+        }
+        $dumplingRequirement->setName($request->get('name'));
+        $dumplingRequirement->setStatus($request->get('status'));
+        $dumplingRequirement->setCreatedAt(new DateTimeImmutable());
+        $dumplingRequirement->setUpdatedAt(new DateTime());
+        $dumplingRequirement->setDumpling($dumpling);
+
+        $errors = $validator->validate($dumplingRequirement);
+        if ($errors->count()) {
+            return $this->jsonErrorsForConstraints($errors);
+        }
+
+        $dumplingRequirementRepository->save($dumplingRequirement);
+
+        return $this->json(['message' => 'Succeed']);
     }
 
     #[IsGranted('ROLE_USER')]

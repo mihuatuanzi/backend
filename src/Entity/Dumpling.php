@@ -9,12 +9,17 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: DumplingRepository::class)]
 #[ORM\Index(columns: ['title'])]
 #[ORM\Index(columns: ['subtitle'])]
 class Dumpling
 {
+    const STATUS_HIDDEN = 0;
+    const STATUS_PUBLIC = 1;
+    const STATUS_UNSEARCHABLE = 2;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -33,6 +38,12 @@ class Dumpling
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $detail = null;
 
+    // 0-隐藏 1-公开 2-不展示
+    #[Assert\Choice(choices: [
+        self::STATUS_HIDDEN,
+        self::STATUS_PUBLIC,
+        self::STATUS_UNSEARCHABLE
+    ])]
     #[ORM\Column(type: Types::SMALLINT)]
     private ?int $status = null;
 
