@@ -116,6 +116,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->formValidators = new ArrayCollection();
     }
 
+    public function is(self $user): bool
+    {
+        return $user->getId() === $this->getId();
+    }
+
     public function getId(): ?int
     {
         return $this->id;

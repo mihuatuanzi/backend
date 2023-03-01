@@ -99,12 +99,16 @@ class DumplingController extends AbstractController
         ValidatorInterface            $validator,
         DumplingRepository            $dumplingRepository,
         DumplingRequirementRepository $dumplingRequirementRepository,
+        #[CurrentUser] ?User          $user,
     ): JsonResponse
     {
         $dumplingId = $request->get('dumpling_id');
         $dumpling = $dumplingRepository->findOneBy(['id' => $dumplingId]);
         if (!$dumpling) {
             return $this->jsonErrors(['_violations' => ['找不到资源']], 404);
+        }
+        if (!$dumpling->getUser()->is($user)) {
+            return $this->jsonErrors(['_violations' => ['您没有修改权限']], 403);
         }
         if ($requirementId = $request->get('requirement_id')) {
             $dumplingRequirement = $dumplingRequirementRepository->findOneBy(['id' => $requirementId]);
