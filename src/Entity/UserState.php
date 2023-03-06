@@ -13,7 +13,7 @@ class UserState
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\OneToOne(inversedBy: 'userOption', cascade: ['persist', 'remove'])]
+    #[ORM\OneToOne(inversedBy: 'userState', cascade: ['persist', 'remove'])]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $user = null;
 
