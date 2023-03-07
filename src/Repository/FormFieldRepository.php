@@ -39,6 +39,11 @@ class FormFieldRepository extends ServiceEntityRepository
         }
     }
 
+    public function flush()
+    {
+        $this->getEntityManager()->flush();
+    }
+
 //    /**
 //     * @return FormField[] Returns an array of FormField objects
 //     */

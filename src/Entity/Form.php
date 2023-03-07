@@ -43,6 +43,11 @@ class Form
     #[ORM\OneToMany(mappedBy: 'form', targetEntity: FormValidator::class)]
     private Collection $formValidators;
 
+    public function findOneOrNew()
+    {
+
+    }
+
     public function __construct()
     {
         $this->formFields = new ArrayCollection();

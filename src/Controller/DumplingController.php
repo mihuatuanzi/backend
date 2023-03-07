@@ -2,19 +2,27 @@
 
 namespace App\Controller;
 
+use App\Config\FormFieldType;
 use App\Entity\Dumpling;
 use App\Entity\DumplingRequirement;
 use App\Entity\Form;
+use App\Entity\FormField;
 use App\Entity\User;
+use App\Exception\StructuredException;
 use App\Repository\DumplingRepository;
 use App\Repository\DumplingRequirementRepository;
+use App\Repository\FormFieldRepository;
+use App\Repository\FormRepository;
 use App\Repository\UserRepository;
 use App\Response\DumplingSummary;
+use App\Service\Form as FormService;
+use App\Service\DumplingRequirement as DumplingRequirementService;
 use App\Strategy\QueryList;
 use DateTime;
 use DateTimeImmutable;
 use Doctrine\ORM\Mapping\ClassMetadataInfo;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
@@ -96,6 +104,10 @@ class DumplingController extends AbstractController
     #[Route('/dumpling/save-requirement', methods: ['POST'])]
     public function saveRequirement(
         Request                       $request,
+        FormService                   $formService,
+        DumplingRequirementService    $requirementService,
+        FormRepository                $formRepository,
+        FormFieldRepository           $formFieldRepository,
         ValidatorInterface            $validator,
         DumplingRepository            $dumplingRepository,
         DumplingRequirementRepository $dumplingRequirementRepository,
@@ -103,38 +115,55 @@ class DumplingController extends AbstractController
     ): JsonResponse
     {
         $dumplingId = $request->get('dumpling_id');
-        $dumpling = $dumplingRepository->findOneBy(['id' => $dumplingId]);
-        if (!$dumpling) {
+        if (!$dumpling = $dumplingRepository->findOneBy(['id' => $dumplingId])) {
             return $this->jsonErrors(['_violations' => ['找不到资源']], 404);
         }
         if (!$dumpling->getUser()->is($user)) {
             return $this->jsonErrors(['_violations' => ['您没有修改权限']], 403);
         }
-        if ($requirementId = $request->get('requirement_id')) {
-            $dumplingRequirement = $dumplingRequirementRepository->findOneBy(['id' => $requirementId]);
-            if (!$dumplingRequirement) {
-                return $this->jsonErrors(['_violations' => ['找不到资源']], 404);
-            }
-            if ($dumplingRequirement->getDumpling()->getId() !== $dumplingId) {
-                return $this->jsonErrors(['_violations' => ['禁止转让 Requirement']], 403);
-            }
-        } else {
-            $dumplingRequirement = new DumplingRequirement();
-        }
-        $dumplingRequirement->setName($request->get('name'));
-        $dumplingRequirement->setStatus($request->get('status'));
-        $dumplingRequirement->setCreatedAt(new DateTimeImmutable());
-        $dumplingRequirement->setUpdatedAt(new DateTime());
-        $dumplingRequirement->setDumpling($dumpling);
 
-        $errors = $validator->validate($dumplingRequirement);
-        if ($errors->count()) {
-            return $this->jsonErrorsForConstraints($errors);
-        }
+        try {
+            // 表单数据
+            $formData = new ParameterBag($request->get('form'));
+            $form = $formService->makeFormByRequest($formData, $user);
+            $errors = $validator->validate($form);
+            if ($errors->count()) {
+                return $this->jsonErrorsForConstraints($errors);
+            }
+            $formRepository->save($form, true);
 
-        $dumplingRequirementRepository->save($dumplingRequirement);
+            // 表单字段数据
+            $fields = $formData->get('fields');
+            foreach ($fields as $index => $item) {
+                $fieldData = new ParameterBag($item);
+                $field = $formService->makeFormFieldByRequest($fieldData, $form, $index);
+                $errors = $validator->validate($field);
+                if ($errors->count()) {
+                    return $this->jsonErrorsForConstraints($errors);
+                }
+                $formFieldRepository->save($field);
+            }
+            $formFieldRepository->flush();
+
+            // 必要任务数据
+            $dumplingRequirement = $requirementService->makeRequirementByRequest(
+                $request->request, $dumpling, $form
+            );
+            $errors = $validator->validate($dumplingRequirement);
+            if ($errors->count()) {
+                return $this->jsonErrorsForConstraints($errors);
+            }
+            $dumplingRequirementRepository->save($dumplingRequirement, true);
+        } catch (StructuredException $e) {
+            return $this->jsonErrors($e->getData(), $e->getCode());
+        }
 
         return $this->json(['message' => 'Succeed']);
+    }
+
+    private function makeRequirementByRequest()
+    {
+
     }
 
     #[IsGranted('ROLE_USER')]

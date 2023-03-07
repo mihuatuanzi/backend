@@ -21,6 +21,14 @@ class DumplingRequirementRepository extends ServiceEntityRepository
         parent::__construct($registry, DumplingRequirement::class);
     }
 
+    public function findOneOrNew(array $criteria, array|null $orderBy = null): DumplingRequirement
+    {
+        if ($entity = $this->findOneBy($criteria, $orderBy)) {
+            return $entity;
+        }
+        return new DumplingRequirement();
+    }
+
     public function save(DumplingRequirement $entity, bool $flush = false): void
     {
         $this->getEntityManager()->persist($entity);
