@@ -26,7 +26,6 @@ class Dumpling
     private ?int $id = null;
 
     #[ORM\ManyToOne(inversedBy: 'dumplings')]
-    #[ORM\JoinColumn(name: 'user_id', nullable: false)]
     private ?User $user = null;
 
     #[ORM\Column(length: 255)]

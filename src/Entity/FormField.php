@@ -8,6 +8,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\HttpFoundation\ParameterBag;
 
 #[ORM\Entity(repositoryClass: FormFieldRepository::class)]
 class FormField
@@ -182,6 +183,16 @@ class FormField
             }
         }
 
+        return $this;
+    }
+
+    public function loadFromParameterBag(ParameterBag $bag): self
+    {
+        $this->setLabel($bag->get('label'));
+        $this->setDetail($bag->get('detail'));
+        $this->setType(FormFieldType::from($bag->get('type')));
+        $this->setAnnotation($bag->get('annotation'));
+        $this->setOrderNumber(0);
         return $this;
     }
 }

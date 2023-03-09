@@ -3,8 +3,12 @@
 namespace App\Entity;
 
 use App\Repository\DumplingRequirementRepository;
+use DateTime;
+use DateTimeImmutable;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\HttpFoundation\ParameterBag;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: DumplingRequirementRepository::class)]
 class DumplingRequirement
@@ -14,7 +18,8 @@ class DumplingRequirement
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(inversedBy: 'dumplingRequirements')]
+    #[Assert\Valid]
+    #[ORM\ManyToOne(cascade: ['persist', 'detach'], inversedBy: 'dumplingRequirements')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Form $form = null;
 
@@ -123,6 +128,15 @@ class DumplingRequirement
     {
         $this->updated_at = $updated_at;
 
+        return $this;
+    }
+
+    public function loadFromParameterBag(ParameterBag $bag): self
+    {
+        $this->setName($bag->get('name'));
+        $this->setStatus($bag->get('status'));
+        $this->setCreatedAt(new DateTimeImmutable());
+        $this->setUpdatedAt(new DateTime());
         return $this;
     }
 }

@@ -20,6 +20,8 @@ use App\Service\DumplingRequirement as DumplingRequirementService;
 use App\Strategy\QueryList;
 use DateTime;
 use DateTimeImmutable;
+use Doctrine\DBAL\Exception;
+use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping\ClassMetadataInfo;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\ParameterBag;
@@ -100,70 +102,51 @@ class DumplingController extends AbstractController
         ]);
     }
 
+    /**
+     * @throws Exception
+     */
     #[IsGranted('ROLE_USER')]
     #[Route('/dumpling/save-requirement', methods: ['POST'])]
     public function saveRequirement(
         Request                       $request,
         FormService                   $formService,
-        DumplingRequirementService    $requirementService,
         FormRepository                $formRepository,
-        FormFieldRepository           $formFieldRepository,
         ValidatorInterface            $validator,
         DumplingRepository            $dumplingRepository,
-        DumplingRequirementRepository $dumplingRequirementRepository,
+        DumplingRequirementRepository $requirementRepository,
+        EntityManagerInterface        $em,
         #[CurrentUser] ?User          $user,
     ): JsonResponse
     {
         $dumplingId = $request->get('dumpling_id');
-        if (!$dumpling = $dumplingRepository->findOneBy(['id' => $dumplingId])) {
+        $dumpling = $dumplingRepository->findOneBy(['id' => $dumplingId, 'user' => $user]);
+        if (!$dumpling) {
             return $this->jsonErrors(['_violations' => ['找不到资源']], 404);
         }
-        if (!$dumpling->getUser()->is($user)) {
-            return $this->jsonErrors(['_violations' => ['您没有修改权限']], 403);
-        }
 
+        $em->getConnection()->beginTransaction();
         try {
-            // 表单数据
-            $formData = new ParameterBag($request->get('form'));
-            $form = $formService->makeFormByRequest($formData, $user);
-            $errors = $validator->validate($form);
-            if ($errors->count()) {
+            $formBag = new ParameterBag($request->get('form'));
+            $form = $formRepository->findOneOrNew(['id' => $formBag->get('id'), 'user' => $user]);
+            $form->loadFromParameterBag($formBag)->setUser($user);
+
+            $fields = $formBag->get('fields', []);
+            $formService->bindFormFields($fields, $form);
+
+            $requirement = $requirementRepository->findOneOrNew(['id' => $request->get('id'), 'form' => $form]);
+            $requirement->loadFromParameterBag($request->request)->setDumpling($dumpling)->setForm($form);
+
+            if (($errors = $validator->validate($requirement))->count()) {
                 return $this->jsonErrorsForConstraints($errors);
             }
-            $formRepository->save($form, true);
-
-            // 表单字段数据
-            $fields = $formData->get('fields');
-            foreach ($fields as $index => $item) {
-                $fieldData = new ParameterBag($item);
-                $field = $formService->makeFormFieldByRequest($fieldData, $form, $index);
-                $errors = $validator->validate($field);
-                if ($errors->count()) {
-                    return $this->jsonErrorsForConstraints($errors);
-                }
-                $formFieldRepository->save($field);
-            }
-            $formFieldRepository->flush();
-
-            // 必要任务数据
-            $dumplingRequirement = $requirementService->makeRequirementByRequest(
-                $request->request, $dumpling, $form
-            );
-            $errors = $validator->validate($dumplingRequirement);
-            if ($errors->count()) {
-                return $this->jsonErrorsForConstraints($errors);
-            }
-            $dumplingRequirementRepository->save($dumplingRequirement, true);
-        } catch (StructuredException $e) {
-            return $this->jsonErrors($e->getData(), $e->getCode());
+            $requirementRepository->save($requirement, true);
+            $em->getConnection()->commit();
+        } catch (\Exception $e) {
+            $em->getConnection()->rollBack();
+            throw $e;
         }
 
         return $this->json(['message' => 'Succeed']);
-    }
-
-    private function makeRequirementByRequest()
-    {
-
     }
 
     #[IsGranted('ROLE_USER')]

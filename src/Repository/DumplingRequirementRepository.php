@@ -14,7 +14,7 @@ use Doctrine\Persistence\ManagerRegistry;
  * @method DumplingRequirement[]    findAll()
  * @method DumplingRequirement[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
-class DumplingRequirementRepository extends ServiceEntityRepository
+class DumplingRequirementRepository extends AbstractRepository
 {
     public function __construct(ManagerRegistry $registry)
     {

@@ -3,16 +3,14 @@
 namespace App\Service;
 
 use App\Config\FormFieldType;
-use App\Entity\Dumpling;
-use App\Entity\DumplingRequirement;
 use App\Entity\FormField;
 use App\Entity\User;
 use App\Exception\StructuredException;
-use App\Repository\DumplingRequirementRepository;
 use App\Repository\FormFieldRepository;
 use App\Repository\FormRepository;
 use DateTime;
 use DateTimeImmutable;
+use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\HttpFoundation\ParameterBag;
 
 readonly class Form
@@ -22,6 +20,27 @@ readonly class Form
         private FormFieldRepository $fieldRepository
     )
     {
+    }
+
+    public function bindFormFields(array $fields, \App\Entity\Form $form): void
+    {
+        $fieldEntities = $this->fieldRepository->findBy([
+            'id' => array_column($fields, 'id'),
+            'form' => $form
+        ]);
+        $fieldEntities = new ArrayCollection($fieldEntities);
+        foreach ($fields as $index => $field) {
+            $fieldBag = new ParameterBag($field);
+            $id = $fieldBag->get('id');
+            $fieldEntity = $fieldEntities->findFirst(fn($_, FormField $e) => $id && $e->getId() == $id);
+            if (!$fieldEntity) {
+                $fieldEntity = new FormField();
+            }
+            $fieldEntity->loadFromParameterBag($fieldBag)
+                ->setOrderNumber($index)
+                ->setForm($form);
+            $form->addFormField($fieldEntity);
+        }
     }
 
     public function makeFormByRequest(ParameterBag $request, User $user): \App\Entity\Form
@@ -42,6 +61,7 @@ readonly class Form
         $form->setDetail($request->get('detail'));
         $form->setCreatedAt(new DateTimeImmutable());
         $form->setUpdatedAt(new DateTime());
+
         return $form;
     }
 

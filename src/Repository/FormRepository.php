@@ -13,8 +13,10 @@ use Doctrine\Persistence\ManagerRegistry;
  * @method Form|null findOneBy(array $criteria, array $orderBy = null)
  * @method Form[]    findAll()
  * @method Form[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ *
+ * @method Form findOneOrNew(array $criteria, array $orderBy = null)
  */
-class FormRepository extends ServiceEntityRepository
+class FormRepository extends AbstractRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
@@ -37,6 +39,14 @@ class FormRepository extends ServiceEntityRepository
         if ($flush) {
             $this->getEntityManager()->flush();
         }
+    }
+
+    public function findOneOrNewById(?int $id): Form
+    {
+        if (!($id && $form = $this->findOneBy(['id' => $id]))) {
+            $form = new Form();
+        }
+        return $form;
     }
 
 //    /**

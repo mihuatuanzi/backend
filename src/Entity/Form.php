@@ -2,11 +2,16 @@
 
 namespace App\Entity;
 
+use App\Config\FormFieldType;
 use App\Repository\FormRepository;
+use DateTime;
+use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\HttpFoundation\ParameterBag;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: FormRepository::class)]
 class Form
@@ -16,6 +21,8 @@ class Form
     #[ORM\Column]
     private ?int $id = null;
 
+    #[Assert\NotBlank(message: '值不能为空')]
+    #[Assert\Length(max: 80, maxMessage: '字数过多')]
     #[ORM\Column(length: 255)]
     private ?string $title = null;
 
@@ -31,7 +38,8 @@ class Form
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private ?\DateTimeInterface $updated_at = null;
 
-    #[ORM\OneToMany(mappedBy: 'form', targetEntity: FormField::class, orphanRemoval: true)]
+    #[Assert\Valid]
+    #[ORM\OneToMany(mappedBy: 'form', targetEntity: FormField::class, cascade: ['persist', 'detach'], orphanRemoval: true)]
     private Collection $formFields;
 
     #[ORM\OneToMany(mappedBy: 'form', targetEntity: FormSubmission::class, orphanRemoval: true)]
@@ -238,6 +246,15 @@ class Form
             }
         }
 
+        return $this;
+    }
+
+    public function loadFromParameterBag(ParameterBag $bag): self
+    {
+        $this->setTitle($bag->get('title'));
+        $this->setDetail($bag->get('detail'));
+        $this->setCreatedAt(new DateTimeImmutable());
+        $this->setUpdatedAt(new DateTime());
         return $this;
     }
 }
