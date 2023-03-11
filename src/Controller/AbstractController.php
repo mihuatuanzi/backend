@@ -2,12 +2,29 @@
 
 namespace App\Controller;
 
+use App\Interface\StructureResponse;
+use App\Response\AcceptData;
 use Symfony\Bundle\FrameworkBundle\Controller;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Validator\ConstraintViolationListInterface;
 
 abstract class AbstractController extends Controller\AbstractController
 {
+    public function acceptWith(
+        StructureResponse $structureResponse,
+        int $status = 200,
+        array $headers = [],
+        array $context = []
+    ): JsonResponse
+    {
+        $acceptData = new AcceptData();
+        $acceptData->attach($structureResponse);
+        return $this->json([
+            AcceptData::ID => $acceptData,
+            'version' => $this->getParameter('env.app_version')
+        ], $status, $headers, $context);
+    }
+
     /**
      * 根据 ConstraintViolationList 返回 json 格式的错误信息
      *

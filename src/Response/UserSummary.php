@@ -4,15 +4,18 @@ namespace App\Response;
 
 use App\Config\UserGenderType;
 use App\Entity\User;
+use App\Interface\StructureResponse;
 
-class UserSummary
+class UserSummary implements StructureResponse
 {
+    const ID = 'user_summary';
+
     public string $uniqueId;
     public string $nickname;
     public UserGenderType $gender;
     public ?string $avatar;
     public ?string $signature;
-    public ?int $createdAt;
+    public ?int $created_at;
 
     public function withUser(User $user): self
     {
@@ -21,7 +24,7 @@ class UserSummary
         $this->gender = $user->getGender();
         $this->avatar = $user->getAvatar();
         $this->signature = $user->getSignature();
-        $this->createdAt = $user->getCreatedAt()->getTimestamp();
+        $this->created_at = $user->getCreatedAt()->getTimestamp();
         return $this;
     }
 }

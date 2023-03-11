@@ -3,9 +3,12 @@
 namespace App\Response;
 
 use App\Entity\Dumpling;
+use App\Interface\StructureResponse;
 
-class DumplingSummary
+class DumplingSummary implements StructureResponse
 {
+    const ID = 'dumpling_summary';
+
     public string $id;
     public string $title;
     public string $subtitle;

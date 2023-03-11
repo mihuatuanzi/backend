@@ -23,6 +23,7 @@ use DateTimeImmutable;
 use Doctrine\DBAL\Exception;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping\ClassMetadataInfo;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
@@ -110,6 +111,7 @@ class DumplingController extends AbstractController
     public function saveRequirement(
         Request                       $request,
         FormService                   $formService,
+        LoggerInterface               $logger,
         FormRepository                $formRepository,
         ValidatorInterface            $validator,
         DumplingRepository            $dumplingRepository,
@@ -143,7 +145,8 @@ class DumplingController extends AbstractController
             $em->getConnection()->commit();
         } catch (\Exception $e) {
             $em->getConnection()->rollBack();
-            throw $e;
+            $logger->error($e->getMessage(), ['userId' => $user->getId()]);
+            return $this->json(['message' => 'Failed'], 500);
         }
 
         return $this->json(['message' => 'Succeed']);

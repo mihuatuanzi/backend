@@ -10,6 +10,7 @@ use App\Repository\AuthenticationRepository;
 use App\Repository\UserRepository;
 use App\Repository\UserStateRepository;
 use App\Response\Certificate;
+use App\Response\Violation;
 use App\Service\Authentic;
 use App\Validator\SuppressDuplicateCredential;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -97,11 +98,12 @@ class AuthController extends AbstractController
     public function signInByEmail(
         Request                     $request,
         Authentic                   $authentic,
-        Certificate                 $certificate,
         UserRepository              $userRepository,
         ValidatorInterface          $validator,
         AuthenticationRepository    $authenticationRepository,
         UserPasswordHasherInterface $passwordHashTool,
+        Certificate                 $certificate,
+        Violation                   $violation
     ): JsonResponse
     {
         $credentialKey = $request->get('email');
@@ -109,23 +111,23 @@ class AuthController extends AbstractController
 
         $errors = $validator->validate($credentialKey, new Assert\Email(null, '值不是有效的电子邮件地址'));
         if ($errors->count()) {
-            return $this->jsonErrorsForConstraints($errors);
+            return $this->acceptWith($violation->withConstraints($errors), 417);
         }
 
         if ($errors = $authentic->validatePassword($password)) {
-            return $this->jsonErrorsForConstraints($errors);
+            return $this->acceptWith($violation->withConstraints($errors), 417);
         }
 
         $auth = $authenticationRepository->findOneBy([
             'credential_type' => AuthCredentialType::Email, 'credential_key' => $credentialKey
         ]);
         if (!$auth) {
-            return $this->jsonErrors(['message' => '邮箱尚未注册']);
+            return $this->acceptWith($violation->withMessage('邮箱尚未注册'), 417);
         }
 
         $user = $auth->getUser();
         if ($user->getStatus() !== User::STATUS_ACTIVE) {
-            return $this->jsonErrors(['message' => '账号处于禁用状态，请联系 Sean 恢复']);
+            return $this->acceptWith($violation->withMessage('账号处于禁用状态，请联系 Sean 恢复'), 417);
         }
 
         if ($passwordHashTool->isPasswordValid($user, $password)) {
@@ -133,7 +135,7 @@ class AuthController extends AbstractController
             if ($request->isXmlHttpRequest()) {
                 $request->getSession()->set('user_identifier', $user->getUserIdentifier());
             }
-            return $this->json(['certificate' => $certificate->withUser($user)]);
+            return $this->acceptWith($certificate->withUser($user));
         }
 
         return $this->jsonErrors(['message' => '账号或密码不正确']);

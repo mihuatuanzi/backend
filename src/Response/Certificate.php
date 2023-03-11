@@ -3,10 +3,13 @@
 namespace App\Response;
 
 use App\Entity\User;
+use App\Interface\StructureResponse;
 use App\Service\Authentic;
 
-class Certificate
+class Certificate implements StructureResponse
 {
+    const ID = 'certificate';
+
     public string $token;
     public string $refresh_token;
     public int $expired_time;
