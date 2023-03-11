@@ -72,6 +72,7 @@ class AuthController extends AbstractController
         EntityManagerInterface      $em,
         AuthenticationRepository    $authRepository,
         UserPasswordHasherInterface $passwordHashTool,
+        ValidatorInterface          $validator,
         Violation                   $violation
     ): JsonResponse
     {
@@ -90,25 +91,22 @@ class AuthController extends AbstractController
             'credential_type' => AuthCredentialType::Email,
             'credential_key' => $email
         ]);
+        $auth->setCredentialType(AuthCredentialType::Email);
+        $auth->setCredentialKey($email);
+        $auth->setCreatedAt(new DateTimeImmutable());
 
-        $em->getConnection()->beginTransaction();
-        try {
-            $auth->setCredentialType(AuthCredentialType::Email);
-            $auth->setCredentialKey($email);
-            $auth->setCreatedAt(new DateTimeImmutable());
-
-            $appVersion = $this->getParameter('env.app_version');
-            $user = $auth->createUserByType(UserType::Person);
-            $user->getUserState()->setAppVersion($appVersion);
-            if ($password) {
-                $user->setPassword($passwordHashTool->hashPassword($user, $password));
-            }
-            $userRepository->save($user, true);
-            $em->getConnection()->commit();
-        } catch (\Exception $e) {
-            $em->getConnection()->rollBack();
-            throw new HttpException(500, '创建失败，请再次尝试', $e);
+        $appVersion = $this->getParameter('env.app_version');
+        $user = $auth->createUserByType(UserType::Person);
+        $user->getUserState()->setAppVersion($appVersion);
+        if ($password) {
+            $user->setPassword($passwordHashTool->hashPassword($user, $password));
         }
+
+        if (($errors = $validator->validate($user))->count()) {
+            return $this->acceptWith($violation->withConstraints($errors), 417);
+        }
+
+        $userRepository->save($user, true);
 
         return $this->json(['message' => 'Succeed']);
     }
