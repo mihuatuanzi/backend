@@ -8,12 +8,15 @@ use App\Config\UserType;
 use App\Entity\User;
 use App\Repository\AuthenticationRepository;
 use App\Repository\UserRepository;
-use App\Repository\UserStateRepository;
 use App\Response\Certificate;
 use App\Response\Violation;
 use App\Service\Authentic;
 use App\Validator\SuppressDuplicateCredential;
+use DateTimeImmutable;
+use Doctrine\DBAL\Exception;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\HttpFoundation\Request;
@@ -34,6 +37,7 @@ class AuthController extends AbstractController
         Request            $request,
         Authentic          $authentic,
         ValidatorInterface $validator,
+        Violation          $violation,
     ): Response
     {
         $scene = $request->get('scene');
@@ -45,28 +49,30 @@ class AuthController extends AbstractController
         }
         $errors = $validator->validate($credentialKey, $constraints);
         if ($errors->count()) {
-            return $this->jsonErrorsForConstraints($errors);
+            return $this->acceptWith($violation->withConstraints($errors), 417);
         }
 
         $verifyToken = $authentic->makeVerifyToken($credentialKey);
         if ($authentic->sendVerificationMail($credentialKey)) {
             return $this->json(['message' => '邮件发送成功', 'verify_token' => $verifyToken], 201);
         }
-        return $this->jsonErrors(['message' => '邮件发送失败'], 500);
+        return $this->acceptWith($violation->withMessage('邮件发送失败'), 500);
     }
 
     /**
      * Email 注册流程
      * 验证邮箱并创建账号
+     * @throws Exception
      */
     #[Route('/auth/verify-email-and-set-password', name: 'auth_verify_email_and_set_pwd', methods: ['POST'])]
     public function verifyEmailAndSetPassword(
         Request                     $request,
         Authentic                   $authentic,
         UserRepository              $userRepository,
-        UserStateRepository         $userStateRepository,
-        AuthenticationRepository    $authenticationRepository,
+        EntityManagerInterface      $em,
+        AuthenticationRepository    $authRepository,
         UserPasswordHasherInterface $passwordHashTool,
+        Violation                   $violation
     ): JsonResponse
     {
         $password = $request->get('password');
@@ -74,22 +80,35 @@ class AuthController extends AbstractController
         $routeName = $request->attributes->get('_route');
 
         if ($password && $errors = $authentic->validatePassword($password)) {
-            return $this->jsonErrorsForConstraints($errors);
+            return $this->acceptWith($violation->withConstraints($errors), 417);
         }
-
         if (!($email = $authentic->getEmailByVerifyToken($verifyToken, $routeName))) {
-            return $this->jsonErrors(['message' => '无法激活账户']);
+            return $this->acceptWith($violation->withMessage('无法激活账户'), 417);
         }
 
-        $auth = $authenticationRepository->findOrCreateByEmail($email, UserType::Person);
-        if ($password) {
-            $user = $auth->getUser();
-            $user->setPassword($passwordHashTool->hashPassword($user, $password));
+        $auth = $authRepository->findOneOrNew([
+            'credential_type' => AuthCredentialType::Email,
+            'credential_key' => $email
+        ]);
+
+        $em->getConnection()->beginTransaction();
+        try {
+            $auth->setCredentialType(AuthCredentialType::Email);
+            $auth->setCredentialKey($email);
+            $auth->setCreatedAt(new DateTimeImmutable());
+
+            $appVersion = $this->getParameter('env.app_version');
+            $user = $auth->createUserByType(UserType::Person);
+            $user->getUserState()->setAppVersion($appVersion);
+            if ($password) {
+                $user->setPassword($passwordHashTool->hashPassword($user, $password));
+            }
             $userRepository->save($user, true);
-            $userStateRepository->save($user->getUserState());
+            $em->getConnection()->commit();
+        } catch (\Exception $e) {
+            $em->getConnection()->rollBack();
+            throw new HttpException(500, '创建失败，请再次尝试', $e);
         }
-
-        $authenticationRepository->save($auth, true);
 
         return $this->json(['message' => 'Succeed']);
     }
@@ -127,7 +146,7 @@ class AuthController extends AbstractController
 
         $user = $auth->getUser();
         if ($user->getStatus() !== User::STATUS_ACTIVE) {
-            return $this->acceptWith($violation->withMessage('账号处于禁用状态，请联系 Sean 恢复'), 417);
+            return $this->acceptWith($violation->withMessage('账号处于禁用状态，请联系 Sean 恢复'), 403);
         }
 
         if ($passwordHashTool->isPasswordValid($user, $password)) {
@@ -138,7 +157,7 @@ class AuthController extends AbstractController
             return $this->acceptWith($certificate->withUser($user));
         }
 
-        return $this->jsonErrors(['message' => '账号或密码不正确']);
+        return $this->acceptWith($violation->withMessage('账号或密码不正确'), 401);
     }
 
     #[Route('/auth/refresh-token', name: 'auth_refresh_token', methods: ['POST'])]
@@ -147,18 +166,19 @@ class AuthController extends AbstractController
         Authentic      $authentic,
         Certificate    $certificate,
         UserRepository $userRepository,
+        Violation      $violation
     ): JsonResponse
     {
         $refreshToken = $request->get('refresh_token');
         if (!$refreshToken) {
-            return $this->jsonErrors(['message' => 'Invalid credentials.'], 401);
+            return $this->acceptWith($violation->withMessage('认证信息不正确'), 401);
         }
         $payload = $authentic->decodeJwtToken($refreshToken);
         if ($payload) {
             if ($user = $userRepository->findOneBy(['unique_id' => $payload['sub']])) {
-                return $this->json(['certificate' => $certificate->withUser($user)]);
+                return $this->acceptWith($certificate->withUser($user));
             }
         }
-        return $this->jsonErrors(['message' => 'Invalid credentials.'], 401);
+        return $this->acceptWith($violation->withMessage('认证信息不正确'), 401);
     }
 }

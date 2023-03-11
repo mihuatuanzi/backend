@@ -8,6 +8,7 @@ use App\Interface\ObjectStorage;
 use App\Repository\AuthenticationRepository;
 use App\Repository\UserRepository;
 use App\Response\UserSummary;
+use App\Response\Violation;
 use App\Service\Authentic;
 use App\Strategy\QueryList;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -50,12 +51,13 @@ class UserController extends AbstractController
         Authentic                   $authentic,
         UserRepository              $userRepository,
         UserPasswordHasherInterface $passwordHashTool,
+        Violation                   $violation,
         #[CurrentUser] ?User        $user,
     ): JsonResponse
     {
         $password = $request->get('password');
         if ($errors = $authentic->validatePassword($password)) {
-            return $this->jsonErrorsForConstraints($errors);
+            return $this->acceptWith($violation->withConstraints($errors), 417);
         }
 
         $user->setPassword($passwordHashTool->hashPassword($user, $password));
@@ -74,6 +76,7 @@ class UserController extends AbstractController
         UserSummary          $userSummary,
         UserRepository       $userRepository,
         ValidatorInterface   $validator,
+        Violation            $violation,
         #[CurrentUser] ?User $user,
     ): JsonResponse
     {
@@ -83,11 +86,11 @@ class UserController extends AbstractController
 
         $errors = $validator->validate($user);
         if ($errors->count()) {
-            return $this->jsonErrorsForConstraints($errors);
+            return $this->acceptWith($violation->withConstraints($errors), 417);
         }
         $userRepository->save($user, true);
 
-        return $this->json(['user_summary' => $userSummary->withUser($user)]);
+        return $this->acceptWith($userSummary->withUser($user));
     }
 
     /**
@@ -99,13 +102,14 @@ class UserController extends AbstractController
         Request              $request,
         ObjectStorage        $objectStorage,
         UserRepository       $userRepository,
+        Violation            $violation,
         #[CurrentUser] ?User $user,
     ): JsonResponse
     {
         /** @var ?UploadedFile $avatar */
         $file = $request->files->get('avatar');
         if (!$file) {
-            return $this->jsonErrors(['message' => 'Update failed']);
+            return $this->acceptWith($violation->withMessage('Update failed'), 417);
         }
         $mimeType = $file->getMimeType();
         $suffixMap = [
@@ -115,7 +119,7 @@ class UserController extends AbstractController
             'image/gif' => 'gif',
         ];
         if (!array_key_exists($mimeType, $suffixMap)) {
-            return $this->jsonErrors(['message' => 'Update failed']);
+            return $this->acceptWith($violation->withMessage('Update failed'), 417);
         }
         $fileName = $user->getUserIdentifier();
         $avatar = "account/avatar/$fileName." . $suffixMap[$mimeType];
@@ -137,18 +141,19 @@ class UserController extends AbstractController
     public function unbindingAuthentication(
         Request                  $request,
         AuthenticationRepository $authRepository,
-        #[CurrentUser] ?User      $user,
+        Violation                $violation,
+        #[CurrentUser] ?User     $user,
     ): JsonResponse
     {
         $id = $request->get('id');
         if (!$id || !is_integer($id)) {
-            return $this->jsonErrors(['message' => 'Unbinding failed']);
+            return $this->acceptWith($violation->withMessage('解绑失败'), 417);
         }
         if ($authRepository->count(['user_id' => $user->getId()]) === 1) {
-            return $this->jsonErrors(['message' => '至少保留一条认证信息']);
+            return $this->acceptWith($violation->withMessage('至少保留一条认证信息'), 417);
         }
         if (!$auth = $authRepository->findOneBy(['id' => $id, 'user_id' => $user->getId()])) {
-            return $this->jsonErrors(['message' => 'Unbinding failed']);
+            return $this->acceptWith($violation->withMessage('解绑失败'), 417);
         }
         $authRepository->remove($auth, true);
         return $this->json(['message' => 'Succeed']);

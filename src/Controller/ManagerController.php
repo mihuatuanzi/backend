@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Repository\UserRepository;
+use App\Response\Violation;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
@@ -16,8 +17,9 @@ class ManagerController extends AbstractController
     #[IsGranted('ROLE_SUPER_USER')]
     #[Route('/manager/set-users-roles', methods: ['POST'])]
     public function setUsersRoles(
-        Request              $request,
-        UserRepository       $userRepository
+        Request        $request,
+        UserRepository $userRepository,
+        Violation      $violation
     ): JsonResponse
     {
         $userIdentifiers = (array)$request->get('user_identifiers');
@@ -28,7 +30,7 @@ class ManagerController extends AbstractController
         $roles = array_intersect($allowRoles, $roles);
 
         if (!$userIdentifiers || !$roles) {
-            return $this->jsonErrors(['message' => '缺少参数']);
+            return $this->acceptWith($violation->withMessage('缺少参数'));
         }
 
         $userRepository->setRolesByIdentifiers($userIdentifiers, $roles);

@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Response\Violation;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -10,7 +11,8 @@ use Throwable;
 class ErrorController extends AbstractController
 {
     public function __construct(
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly Violation       $violation
     )
     {
     }
@@ -19,11 +21,11 @@ class ErrorController extends AbstractController
     {
         $this->logger->warning($exception->getMessage());
         $this->logger->warning($exception->getTraceAsString());
+        $code = 500;
         if ($exception instanceof HttpException) {
-            return $this->jsonErrors([
-                'message' => $exception->getMessage()
-            ], $exception->getStatusCode());
+            $code = $exception->getStatusCode();
         }
-        return $this->jsonErrors(['message' => $exception->getMessage()], 500);
+        $violation = $this->violation->withMessage($exception->getMessage());
+        return $this->acceptWith($violation, $code);
     }
 }

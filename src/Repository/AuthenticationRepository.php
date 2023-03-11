@@ -17,8 +17,10 @@ use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
  * @method Authentication|null findOneBy(array $criteria, array $orderBy = null)
  * @method Authentication[]    findAll()
  * @method Authentication[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ *
+ * @method Authentication findOneOrNew(array $criteria, array $orderBy = null)
  */
-class AuthenticationRepository extends ServiceEntityRepository
+class AuthenticationRepository extends AbstractRepository
 {
     public function __construct(
         ManagerRegistry       $registry,
@@ -57,7 +59,7 @@ class AuthenticationRepository extends ServiceEntityRepository
             $auth->setCredentialKey($email);
             $auth->setCreatedAt(new DateTimeImmutable());
             // User 必须在 Auth 之前保存
-            $user = $auth->initializeUser($userType);
+            $user = $auth->createUserByType($userType);
             $user->getUserState()->setAppVersion($this->parameterBag->get('env.app_version'));
             $this->getEntityManager()->persist($user);
         }

@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Config\AuthCredentialType;
+use App\Config\FormFieldType;
 use App\Config\UserType;
 use App\Repository\AuthenticationRepository;
 use App\Validator\SuppressDuplicateCredential;
@@ -10,6 +11,7 @@ use DateTimeImmutable;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Ramsey\Uuid\Uuid;
+use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: AuthenticationRepository::class)]
@@ -21,6 +23,7 @@ class Authentication
     #[ORM\Column]
     private ?int $id = null;
 
+    #[Assert\Valid]
     #[ORM\ManyToOne(inversedBy: 'authentications')]
     #[ORM\JoinColumn(name: 'user_id', nullable: false)]
     private User $user;
@@ -130,7 +133,7 @@ class Authentication
         return $this;
     }
 
-    public function initializeUser(UserType $userType): User
+    public function createUserByType(UserType $userType): User
     {
         $user = new User();
         $user->setUniqueId(Uuid::uuid7());
@@ -141,9 +144,9 @@ class Authentication
         $user->setCreatedAt($this->getCreatedAt());
 
         $userState = new UserState();
-        $userState->setUser($user);
-
         $user->setUserState($userState);
+
+        $userState->setUser($user);
         $this->setUser($user);
         return $user;
     }

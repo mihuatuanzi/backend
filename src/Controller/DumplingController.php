@@ -15,6 +15,7 @@ use App\Repository\FormFieldRepository;
 use App\Repository\FormRepository;
 use App\Repository\UserRepository;
 use App\Response\DumplingSummary;
+use App\Response\Violation;
 use App\Service\Form as FormService;
 use App\Service\DumplingRequirement as DumplingRequirementService;
 use App\Strategy\QueryList;
@@ -41,16 +42,18 @@ class DumplingController extends AbstractController
         UserRepository       $userRepository,
         DumplingRepository   $dumplingRepository,
         ValidatorInterface   $validator,
+        Violation            $violation,
         #[CurrentUser] ?User $user,
     ): JsonResponse
     {
         if ($dumplingId = $request->get('dumpling_id')) {
             $dumpling = $dumplingRepository->findOneBy(['id' => $dumplingId]);
             if (!$dumpling) {
-                return $this->jsonErrors(['_violations' => ['找不到该资源']], 404);
+                return $this->acceptWith($violation->withMessage('找不到该资源'), 417);
             }
+
             if (!$userRepository->hasDumpling($user, $dumpling)) {
-                return $this->jsonErrors(['_violations' => ['编辑权限不足']], 403);
+                return $this->acceptWith($violation->withMessage('编辑权限不足'), 403);
             }
         } else {
             $dumpling = new Dumpling();
@@ -67,7 +70,7 @@ class DumplingController extends AbstractController
 
         $errors = $validator->validate($dumpling);
         if ($errors->count()) {
-            return $this->jsonErrorsForConstraints($errors);
+            return $this->acceptWith($violation->withConstraints($errors), 417);
         }
 
         $dumplingRepository->save($dumpling, true);
@@ -84,7 +87,8 @@ class DumplingController extends AbstractController
      * @param DumplingRepository $dumplingRepository
      * @return JsonResponse
      */
-    #[Route('/dumpling/search', methods: ['GET'])]
+    #[
+        Route('/dumpling/search', methods: ['GET'])]
     public function search(
         Request            $request,
         QueryList          $queryListStrategy,
@@ -117,13 +121,14 @@ class DumplingController extends AbstractController
         DumplingRepository            $dumplingRepository,
         DumplingRequirementRepository $requirementRepository,
         EntityManagerInterface        $em,
+        Violation                     $violation,
         #[CurrentUser] ?User          $user,
     ): JsonResponse
     {
         $dumplingId = $request->get('dumpling_id');
         $dumpling = $dumplingRepository->findOneBy(['id' => $dumplingId, 'user' => $user]);
         if (!$dumpling) {
-            return $this->jsonErrors(['_violations' => ['找不到资源']], 404);
+            return $this->acceptWith($violation->withMessage('找不到资源'), 404);
         }
 
         $em->getConnection()->beginTransaction();
@@ -139,14 +144,14 @@ class DumplingController extends AbstractController
             $requirement->loadFromParameterBag($request->request)->setDumpling($dumpling)->setForm($form);
 
             if (($errors = $validator->validate($requirement))->count()) {
-                return $this->jsonErrorsForConstraints($errors);
+                return $this->acceptWith($violation->withConstraints($errors), 417);
             }
             $requirementRepository->save($requirement, true);
             $em->getConnection()->commit();
         } catch (\Exception $e) {
             $em->getConnection()->rollBack();
             $logger->error($e->getMessage(), ['userId' => $user->getId()]);
-            return $this->json(['message' => 'Failed'], 500);
+            return $this->acceptWith($violation->withMessage('创建失败，请再次尝试'), 417);
         }
 
         return $this->json(['message' => 'Succeed']);
