@@ -8,7 +8,8 @@ use App\Interface\StructureResponse;
 
 class UserSummary implements StructureResponse
 {
-    const ID = 'user_summary';
+    const SINGULAR = 'user_summary';
+    const PLURAL = 'user_summaries';
 
     public string $uniqueId;
     public string $nickname;

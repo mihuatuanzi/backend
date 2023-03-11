@@ -99,7 +99,7 @@ class DumplingController extends AbstractController
             ->setFetchMode(Dumpling::class, 'user', ClassMetadataInfo::FETCH_EAGER)
             ->getResult();
         return $this->json([
-            'dumplings' => array_map(fn($d) => $dumplingSummary->withDumpling($d), $list)
+            DumplingSummary::PLURAL => array_map(fn($d) => $dumplingSummary->withDumpling($d), $list)
         ]);
     }
 

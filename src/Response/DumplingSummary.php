@@ -7,7 +7,8 @@ use App\Interface\StructureResponse;
 
 class DumplingSummary implements StructureResponse
 {
-    const ID = 'dumpling_summary';
+    const SINGULAR = 'dumpling_summary';
+    const PLURAL = 'dumpling_summaries';
 
     public string $id;
     public string $title;
@@ -27,7 +28,7 @@ class DumplingSummary implements StructureResponse
         $this->title = $dumpling->getTitle();
         $this->subtitle = $dumpling->getSubtitle();
         $this->createdAt = $dumpling->getCreatedAt()->getTimestamp();
-        $this->user_summary = $this->userSummary->withUser($dumpling->getUser());
+        $this->{UserSummary::SINGULAR} = $this->userSummary->withUser($dumpling->getUser());
         return $this;
     }
 }

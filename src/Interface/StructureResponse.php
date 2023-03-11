@@ -4,5 +4,6 @@ namespace App\Interface;
 
 interface StructureResponse
 {
-    const ID = self::class;
+    const SINGULAR = self::class;
+    const PLURAL = self::class;
 }

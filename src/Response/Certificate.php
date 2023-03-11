@@ -8,7 +8,8 @@ use App\Service\Authentic;
 
 class Certificate implements StructureResponse
 {
-    const ID = 'certificate';
+    const SINGULAR = 'certificate';
+    const PLURAL = 'certificates';
 
     public string $token;
     public string $refresh_token;
@@ -32,7 +33,7 @@ class Certificate implements StructureResponse
         $this->expired_time = $expiredTime;
         $this->refresh_time = $refreshTime;
         $this->timezone = 'UTC';
-        $this->user_summary = $this->userSummary->withUser($user);
+        $this->{UserSummary::SINGULAR} = $this->userSummary->withUser($user);
         return $this;
     }
 }

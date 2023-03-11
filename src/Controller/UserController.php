@@ -36,7 +36,7 @@ class UserController extends AbstractController
         ]);
         $users = $builder->getQuery()->getResult();
         return $this->json([
-            'user_summaries' => array_map(fn($u) => $userSummary->withUser($u), $users)
+            UserSummary::PLURAL => array_map(fn($u) => $userSummary->withUser($u), $users)
         ]);
     }
 

@@ -11,7 +11,7 @@ use Symfony\Component\Validator\ConstraintViolationListInterface;
 abstract class AbstractController extends Controller\AbstractController
 {
     public function acceptWith(
-        StructureResponse $structureResponse,
+        StructureResponse|array $structureResponse,
         int $status = 200,
         array $headers = [],
         array $context = []
@@ -20,7 +20,7 @@ abstract class AbstractController extends Controller\AbstractController
         $acceptData = new AcceptData();
         $acceptData->attach($structureResponse);
         return $this->json([
-            AcceptData::ID => $acceptData,
+            AcceptData::SINGULAR => $acceptData,
             'version' => $this->getParameter('env.app_version')
         ], $status, $headers, $context);
     }

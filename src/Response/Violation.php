@@ -7,7 +7,8 @@ use Symfony\Component\Validator\ConstraintViolationListInterface;
 
 class Violation implements StructureResponse
 {
-    const ID = 'violation';
+    const SINGULAR = 'violation';
+    const PLURAL = 'violations';
 
     public array $_violations = [];
 
