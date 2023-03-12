@@ -16,11 +16,10 @@ abstract class AbstractController extends Controller\AbstractController
         array $context = []
     ): JsonResponse
     {
-        $acceptData = new AcceptData();
-        $acceptData->attach($structureResponse);
-        return $this->json([
-            AcceptData::SINGULAR => $acceptData,
+        $body = [
+            AcceptData::SINGULAR => (new AcceptData())->attach($structureResponse),
             'version' => $this->getParameter('env.app_version')
-        ], $status, $headers, $context);
+        ];
+        return $this->json($body, $status, $headers, $context);
     }
 }

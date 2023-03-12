@@ -2,22 +2,15 @@
 
 namespace App\Controller;
 
-use App\Config\FormFieldType;
 use App\Entity\Dumpling;
-use App\Entity\DumplingRequirement;
-use App\Entity\Form;
-use App\Entity\FormField;
 use App\Entity\User;
-use App\Exception\StructuredException;
 use App\Repository\DumplingRepository;
 use App\Repository\DumplingRequirementRepository;
-use App\Repository\FormFieldRepository;
 use App\Repository\FormRepository;
 use App\Repository\UserRepository;
 use App\Response\DumplingSummary;
 use App\Response\Violation;
 use App\Service\Form as FormService;
-use App\Service\DumplingRequirement as DumplingRequirementService;
 use App\Strategy\QueryList;
 use DateTime;
 use DateTimeImmutable;
@@ -83,7 +76,7 @@ class DumplingController extends AbstractController
      *
      * @param Request $request
      * @param QueryList $queryListStrategy
-     * @param DumplingSummary $dumplingSummary
+     * @param DumplingSummary $summary
      * @param DumplingRepository $dumplingRepository
      * @return JsonResponse
      */
@@ -92,7 +85,7 @@ class DumplingController extends AbstractController
     public function search(
         Request            $request,
         QueryList          $queryListStrategy,
-        DumplingSummary    $dumplingSummary,
+        DumplingSummary    $summary,
         DumplingRepository $dumplingRepository,
     ): JsonResponse
     {
@@ -102,9 +95,7 @@ class DumplingController extends AbstractController
         $list = $builder->getQuery()
             ->setFetchMode(Dumpling::class, 'user', ClassMetadataInfo::FETCH_EAGER)
             ->getResult();
-        return $this->json([
-            DumplingSummary::PLURAL => array_map(fn($d) => $dumplingSummary->withDumpling($d), $list)
-        ]);
+        return $this->acceptWith(array_map(fn($d) => $summary->withDumpling($d), $list));
     }
 
     /**

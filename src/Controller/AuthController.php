@@ -16,7 +16,6 @@ use DateTimeImmutable;
 use Doctrine\DBAL\Exception;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\HttpFoundation\Request;
@@ -54,7 +53,7 @@ class AuthController extends AbstractController
 
         $verifyToken = $authentic->makeVerifyToken($credentialKey);
         if ($authentic->sendVerificationMail($credentialKey)) {
-            return $this->json(['message' => '邮件发送成功', 'verify_token' => $verifyToken], 201);
+            return $this->json(['message' => '邮件发送成功', 'verify_token' => $verifyToken]);
         }
         return $this->acceptWith($violation->withMessage('邮件发送失败'), 500);
     }
@@ -91,9 +90,9 @@ class AuthController extends AbstractController
             'credential_type' => AuthCredentialType::Email,
             'credential_key' => $email
         ]);
-        $auth->setCredentialType(AuthCredentialType::Email);
-        $auth->setCredentialKey($email);
-        $auth->setCreatedAt(new DateTimeImmutable());
+        $auth->setCredentialType(AuthCredentialType::Email)
+            ->setCredentialKey($email)
+            ->setCreatedAt(new DateTimeImmutable());
 
         $appVersion = $this->getParameter('env.app_version');
         $user = $auth->createUserByType(UserType::Person);
