@@ -25,7 +25,7 @@ class ErrorController extends AbstractController
         if ($exception instanceof HttpException) {
             $code = $exception->getStatusCode();
         }
-        $violation = $this->violation->withMessage($exception->getMessage());
+        $violation = $this->violation->withMessages($exception->getMessage());
         return $this->acceptWith($violation, $code);
     }
 }

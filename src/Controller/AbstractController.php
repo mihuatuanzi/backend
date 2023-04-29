@@ -17,7 +17,7 @@ abstract class AbstractController extends Controller\AbstractController
     ): JsonResponse
     {
         $body = [
-            AcceptData::SINGULAR => (new AcceptData())->attach($structureResponse),
+            AcceptData::KEY_SINGULAR => (new AcceptData())->attach($structureResponse),
             'version' => $this->getParameter('env.app_version')
         ];
         return $this->json($body, $status, $headers, $context);

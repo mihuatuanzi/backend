@@ -7,8 +7,8 @@ use Symfony\Component\Validator\ConstraintViolationListInterface;
 
 class Violation implements StructureResponse
 {
-    const SINGULAR = 'violation';
-    const PLURAL = 'violations';
+    const KEY_SINGULAR = 'violation';
+    const KEY_PLURAL = 'violations';
 
     public array $_violations = [];
 
@@ -24,7 +24,7 @@ class Violation implements StructureResponse
         return $this;
     }
 
-    public function withMessage(string|array $message): self
+    public function withMessages(string|array $message): self
     {
         foreach ((array)$message as $key => $item) {
             if (is_numeric($key)) {

@@ -32,15 +32,16 @@ services:
             update_config:
                 order: start-first
     database:
-        image: mariadb:10.10
+        image: mysql:8
         hostname: backend.database.mihuatuanzi.io
+        command: --default-authentication-plugin=mysql_native_password
         volumes:
             - mihuatuanzi_database_backend:/var/lib/mysql:rw
         environment:
-            MARIADB_ROOT_PASSWORD: mihuatuanzi
-            MARIADB_DATABASE: mihuatuanzi_backend
-            MARIADB_USER: admin
-            MARIADB_PASSWORD: mihuatuanzi
+            MYSQL_ROOT_PASSWORD: mihuatuanzi
+            MYSQL_DATABASE: mihuatuanzi_backend
+            MYSQL_USER: admin
+            MYSQL_PASSWORD: mihuatuanzi
 
 volumes:
     mihuatuanzi_database_backend:

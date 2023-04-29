@@ -42,11 +42,11 @@ class DumplingController extends AbstractController
         if ($dumplingId = $request->get('dumpling_id')) {
             $dumpling = $dumplingRepository->findOneBy(['id' => $dumplingId]);
             if (!$dumpling) {
-                return $this->acceptWith($violation->withMessage('找不到该资源'), 417);
+                return $this->acceptWith($violation->withMessages('找不到该资源'), 417);
             }
 
             if (!$userRepository->hasDumpling($user, $dumpling)) {
-                return $this->acceptWith($violation->withMessage('编辑权限不足'), 403);
+                return $this->acceptWith($violation->withMessages('编辑权限不足'), 403);
             }
         } else {
             $dumpling = new Dumpling();
@@ -119,7 +119,7 @@ class DumplingController extends AbstractController
         $dumplingId = $request->get('dumpling_id');
         $dumpling = $dumplingRepository->findOneBy(['id' => $dumplingId, 'user' => $user]);
         if (!$dumpling) {
-            return $this->acceptWith($violation->withMessage('找不到资源'), 404);
+            return $this->acceptWith($violation->withMessages('找不到资源'), 404);
         }
 
         $em->getConnection()->beginTransaction();
@@ -142,7 +142,7 @@ class DumplingController extends AbstractController
         } catch (\Exception $e) {
             $em->getConnection()->rollBack();
             $logger->error($e->getMessage(), ['userId' => $user->getId()]);
-            return $this->acceptWith($violation->withMessage('创建失败，请再次尝试'), 417);
+            return $this->acceptWith($violation->withMessages('创建失败，请再次尝试'), 417);
         }
 
         return $this->json(['message' => 'Succeed']);

@@ -4,6 +4,6 @@ namespace App\Interface;
 
 interface StructureResponse
 {
-    const SINGULAR = self::class;
-    const PLURAL = self::class;
+    const KEY_SINGULAR = self::class;
+    const KEY_PLURAL = self::class;
 }

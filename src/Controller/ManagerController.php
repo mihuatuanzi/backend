@@ -30,7 +30,7 @@ class ManagerController extends AbstractController
         $roles = array_intersect($allowRoles, $roles);
 
         if (!$userIdentifiers || !$roles) {
-            return $this->acceptWith($violation->withMessage('缺少参数'));
+            return $this->acceptWith($violation->withMessages('缺少参数'));
         }
 
         $userRepository->setRolesByIdentifiers($userIdentifiers, $roles);

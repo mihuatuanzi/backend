@@ -7,8 +7,8 @@ use App\Interface\StructureResponse;
 
 class DumplingSummary implements StructureResponse
 {
-    const SINGULAR = 'dumpling_summary';
-    const PLURAL = 'dumpling_summaries';
+    const KEY_SINGULAR = 'dumpling_summary';
+    const KEY_PLURAL = 'dumpling_summaries';
 
     public string $id;
     public string $title;

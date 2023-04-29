@@ -9,6 +9,7 @@ use App\Entity\User;
 use App\Repository\AuthenticationRepository;
 use App\Repository\UserRepository;
 use App\Response\Certificate;
+use App\Response\Message;
 use App\Response\Violation;
 use App\Service\Authentic;
 use App\Validator\SuppressDuplicateCredential;
@@ -37,6 +38,7 @@ class AuthController extends AbstractController
         Authentic          $authentic,
         ValidatorInterface $validator,
         Violation          $violation,
+        Message            $message
     ): Response
     {
         $scene = $request->get('scene');
@@ -53,9 +55,11 @@ class AuthController extends AbstractController
 
         $verifyToken = $authentic->makeVerifyToken($credentialKey);
         if ($authentic->sendVerificationMail($credentialKey)) {
-            return $this->json(['message' => '邮件发送成功', 'verify_token' => $verifyToken]);
+            return $this->acceptWith($message->with('Succeed')->withAnnotation([
+                'verify_token' => $verifyToken
+            ]));
         }
-        return $this->acceptWith($violation->withMessage('邮件发送失败'), 500);
+        return $this->acceptWith($violation->withMessages('邮件发送失败'), 500);
     }
 
     /**
@@ -72,7 +76,8 @@ class AuthController extends AbstractController
         AuthenticationRepository    $authRepository,
         UserPasswordHasherInterface $passwordHashTool,
         ValidatorInterface          $validator,
-        Violation                   $violation
+        Violation                   $violation,
+        Message                     $message
     ): JsonResponse
     {
         $password = $request->get('password');
@@ -83,7 +88,7 @@ class AuthController extends AbstractController
             return $this->acceptWith($violation->withConstraints($errors), 417);
         }
         if (!($email = $authentic->getEmailByVerifyToken($verifyToken, $routeName))) {
-            return $this->acceptWith($violation->withMessage('无法激活账户'), 417);
+            return $this->acceptWith($violation->withMessages('无法激活账户'), 417);
         }
 
         $auth = $authRepository->findOneOrNew([
@@ -105,9 +110,10 @@ class AuthController extends AbstractController
             return $this->acceptWith($violation->withConstraints($errors), 417);
         }
 
-        $userRepository->save($user, true);
+        $authRepository->save($auth, true);
+//        $userRepository->save($user, true);
 
-        return $this->json(['message' => 'Succeed']);
+        return $this->acceptWith($message->with('Succeed'));
     }
 
     #[Route('/auth/sign-in-by-email', name: 'auth_sign_in_by_email', methods: ['POST'])]
@@ -119,7 +125,8 @@ class AuthController extends AbstractController
         AuthenticationRepository    $authenticationRepository,
         UserPasswordHasherInterface $passwordHashTool,
         Certificate                 $certificate,
-        Violation                   $violation
+        Violation                   $violation,
+        Message                     $message
     ): JsonResponse
     {
         $credentialKey = $request->get('email');
@@ -138,12 +145,12 @@ class AuthController extends AbstractController
             'credential_type' => AuthCredentialType::Email, 'credential_key' => $credentialKey
         ]);
         if (!$auth) {
-            return $this->acceptWith($violation->withMessage('邮箱尚未注册'), 417);
+            return $this->acceptWith($violation->withMessages('邮箱尚未注册'), 417);
         }
 
         $user = $auth->getUser();
         if ($user->getStatus() !== User::STATUS_ACTIVE) {
-            return $this->acceptWith($violation->withMessage('账号处于禁用状态，请联系 Sean 恢复'), 403);
+            return $this->acceptWith($violation->withMessages('账号处于禁用状态，请联系 Sean 恢复'), 403);
         }
 
         if ($passwordHashTool->isPasswordValid($user, $password)) {
@@ -154,7 +161,7 @@ class AuthController extends AbstractController
             return $this->acceptWith($certificate->withUser($user));
         }
 
-        return $this->acceptWith($violation->withMessage('账号或密码不正确'), 401);
+        return $this->acceptWith($violation->withMessages('账号或密码不正确'), 401);
     }
 
     #[Route('/auth/refresh-token', name: 'auth_refresh_token', methods: ['POST'])]
@@ -168,7 +175,7 @@ class AuthController extends AbstractController
     {
         $refreshToken = $request->get('refresh_token');
         if (!$refreshToken) {
-            return $this->acceptWith($violation->withMessage('认证信息不正确'), 401);
+            return $this->acceptWith($violation->withMessages('认证信息不正确'), 401);
         }
         $payload = $authentic->decodeJwtToken($refreshToken);
         if ($payload) {
@@ -176,6 +183,6 @@ class AuthController extends AbstractController
                 return $this->acceptWith($certificate->withUser($user));
             }
         }
-        return $this->acceptWith($violation->withMessage('认证信息不正确'), 401);
+        return $this->acceptWith($violation->withMessages('认证信息不正确'), 401);
     }
 }

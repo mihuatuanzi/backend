@@ -6,8 +6,8 @@ use App\Interface\StructureResponse;
 
 class AcceptData implements StructureResponse
 {
-    const SINGULAR = 'data';
-    const PLURAL = 'data';
+    const KEY_SINGULAR = 'data';
+    const KEY_PLURAL = 'data';
 
     /**
      * @param StructureResponse|StructureResponse[] $struct
@@ -15,7 +15,7 @@ class AcceptData implements StructureResponse
      */
     public function attach(StructureResponse|array $struct): self
     {
-        $key = is_array($struct) ? $struct::PLURAL : $struct::SINGULAR;
+        $key = is_array($struct) ? $struct::KEY_PLURAL : $struct::KEY_SINGULAR;
         $this->{$key} = $struct;
         return $this;
     }

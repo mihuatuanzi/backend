@@ -37,7 +37,7 @@ class UserController extends AbstractController
         ]);
         $users = $builder->getQuery()->getResult();
         return $this->json([
-            UserSummary::PLURAL => array_map(fn($u) => $userSummary->withUser($u), $users)
+            UserSummary::KEY_PLURAL => array_map(fn($u) => $userSummary->withUser($u), $users)
         ]);
     }
 
@@ -109,7 +109,7 @@ class UserController extends AbstractController
         /** @var ?UploadedFile $avatar */
         $file = $request->files->get('avatar');
         if (!$file) {
-            return $this->acceptWith($violation->withMessage('Update failed'), 417);
+            return $this->acceptWith($violation->withMessages('Update failed'), 417);
         }
         $mimeType = $file->getMimeType();
         $suffixMap = [
@@ -119,7 +119,7 @@ class UserController extends AbstractController
             'image/gif' => 'gif',
         ];
         if (!array_key_exists($mimeType, $suffixMap)) {
-            return $this->acceptWith($violation->withMessage('Update failed'), 417);
+            return $this->acceptWith($violation->withMessages('Update failed'), 417);
         }
         $fileName = $user->getUserIdentifier();
         $avatar = "account/avatar/$fileName." . $suffixMap[$mimeType];
@@ -147,13 +147,13 @@ class UserController extends AbstractController
     {
         $id = $request->get('id');
         if (!$id || !is_integer($id)) {
-            return $this->acceptWith($violation->withMessage('解绑失败'), 417);
+            return $this->acceptWith($violation->withMessages('解绑失败'), 417);
         }
         if ($authRepository->count(['user_id' => $user->getId()]) === 1) {
-            return $this->acceptWith($violation->withMessage('至少保留一条认证信息'), 417);
+            return $this->acceptWith($violation->withMessages('至少保留一条认证信息'), 417);
         }
         if (!$auth = $authRepository->findOneBy(['id' => $id, 'user_id' => $user->getId()])) {
-            return $this->acceptWith($violation->withMessage('解绑失败'), 417);
+            return $this->acceptWith($violation->withMessages('解绑失败'), 417);
         }
         $authRepository->remove($auth, true);
         return $this->json(['message' => 'Succeed']);
