@@ -7,10 +7,13 @@ use App\Entity\User;
 use App\Interface\ObjectStorage;
 use App\Repository\AuthenticationRepository;
 use App\Repository\UserRepository;
+use App\Response\ListOf;
+use App\Response\Message;
 use App\Response\UserSummary;
 use App\Response\Violation;
 use App\Service\Authentic;
 use App\Strategy\QueryList;
+use ReflectionException;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,12 +25,16 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class UserController extends AbstractController
 {
+    /**
+     * @throws ReflectionException
+     */
     #[Route('/user/search', methods: ['GET'])]
     public function search(
         Request        $request,
         UserSummary    $userSummary,
         UserRepository $userRepository,
-        QueryList      $queryListStrategy
+        QueryList      $queryListStrategy,
+        ListOf         $listOf,
     ): JsonResponse
     {
         $keywords = $request->get('keywords');
@@ -36,9 +43,9 @@ class UserController extends AbstractController
             'user_exp' => 'u.exp'
         ]);
         $users = $builder->getQuery()->getResult();
-        return $this->json([
-            UserSummary::KEY_PLURAL => array_map(fn($u) => $userSummary->withUser($u), $users)
-        ]);
+
+        $userSummaries = array_map(fn($u) => $userSummary->withUser($u), $users);
+        return $this->acceptWith($listOf->with($userSummaries, UserSummary::class));
     }
 
     /**
@@ -52,6 +59,7 @@ class UserController extends AbstractController
         UserRepository              $userRepository,
         UserPasswordHasherInterface $passwordHashTool,
         Violation                   $violation,
+        Message                     $message,
         #[CurrentUser] ?User        $user,
     ): JsonResponse
     {
@@ -63,7 +71,7 @@ class UserController extends AbstractController
         $user->setPassword($passwordHashTool->hashPassword($user, $password));
         $userRepository->save($user, true);
 
-        return $this->json(['message' => 'Succeed']);
+        return $this->acceptWith($message->with('Succeed'));
     }
 
     /**
@@ -103,6 +111,7 @@ class UserController extends AbstractController
         ObjectStorage        $objectStorage,
         UserRepository       $userRepository,
         Violation            $violation,
+        Message              $message,
         #[CurrentUser] ?User $user,
     ): JsonResponse
     {
@@ -127,10 +136,10 @@ class UserController extends AbstractController
         $objectStorage->put($avatar, $file->getRealPath(), $mimeType);
         $userRepository->save($user->setAvatar($avatar . '?_t=' . time()), true);
 
-        return $this->json([
-            'avatar' => $user->getAvatar(),
-            'message' => 'Succeed'
+        $message = $message->with('Succeed')->withAnnotation([
+            'avatar_url' => $user->getAvatar(),
         ]);
+        return $this->acceptWith($message->with('Succeed'));
     }
 
     /**

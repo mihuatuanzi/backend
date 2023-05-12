@@ -81,7 +81,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private ?DateTimeImmutable $created_at = null;
 
-    #[Assert\Valid]
     #[ORM\OneToMany(mappedBy: 'user_id', targetEntity: Authentication::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $authentications;
 

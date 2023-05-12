@@ -15,7 +15,6 @@ use App\Service\Authentic;
 use App\Validator\SuppressDuplicateCredential;
 use DateTimeImmutable;
 use Doctrine\DBAL\Exception;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -71,8 +70,6 @@ class AuthController extends AbstractController
     public function verifyEmailAndSetPassword(
         Request                     $request,
         Authentic                   $authentic,
-        UserRepository              $userRepository,
-        EntityManagerInterface      $em,
         AuthenticationRepository    $authRepository,
         UserPasswordHasherInterface $passwordHashTool,
         ValidatorInterface          $validator,
@@ -111,7 +108,6 @@ class AuthController extends AbstractController
         }
 
         $authRepository->save($auth, true);
-//        $userRepository->save($user, true);
 
         return $this->acceptWith($message->with('Succeed'));
     }
@@ -120,13 +116,11 @@ class AuthController extends AbstractController
     public function signInByEmail(
         Request                     $request,
         Authentic                   $authentic,
-        UserRepository              $userRepository,
         ValidatorInterface          $validator,
         AuthenticationRepository    $authenticationRepository,
         UserPasswordHasherInterface $passwordHashTool,
         Certificate                 $certificate,
         Violation                   $violation,
-        Message                     $message
     ): JsonResponse
     {
         $credentialKey = $request->get('email');

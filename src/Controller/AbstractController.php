@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Interface\ListResponse;
 use App\Interface\StructureResponse;
 use App\Response\AcceptData;
 use Symfony\Bundle\FrameworkBundle\Controller;
@@ -10,7 +11,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 abstract class AbstractController extends Controller\AbstractController
 {
     public function acceptWith(
-        StructureResponse|array $structureResponse,
+        StructureResponse|ListResponse $structureResponse,
         int $status = 200,
         array $headers = [],
         array $context = []

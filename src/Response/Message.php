@@ -3,7 +3,6 @@
 namespace App\Response;
 
 use App\Interface\StructureResponse;
-use DateTimeImmutable;
 
 class Message implements StructureResponse
 {
