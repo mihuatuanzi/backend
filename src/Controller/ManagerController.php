@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Repository\UserRepository;
+use App\Response\Message;
 use App\Response\Violation;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -19,7 +20,8 @@ class ManagerController extends AbstractController
     public function setUsersRoles(
         Request        $request,
         UserRepository $userRepository,
-        Violation      $violation
+        Violation      $violation,
+        Message        $message
     ): JsonResponse
     {
         $userIdentifiers = (array)$request->get('user_identifiers');
@@ -34,6 +36,6 @@ class ManagerController extends AbstractController
         }
 
         $userRepository->setRolesByIdentifiers($userIdentifiers, $roles);
-        return $this->json(['message' => 'Succeed']);
+        return $this->acceptWith($message->with('Succeed'));
     }
 }

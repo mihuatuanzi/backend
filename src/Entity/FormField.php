@@ -40,7 +40,7 @@ class FormField
     #[ORM\OneToMany(mappedBy: 'field', targetEntity: FormFieldValue::class, orphanRemoval: true)]
     private Collection $formFieldValues;
 
-    #[ORM\OneToMany(mappedBy: 'form_field', targetEntity: FormFieldValidator::class, orphanRemoval: true)]
+    #[ORM\OneToMany(mappedBy: 'form_field', targetEntity: FormFieldValidator::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $formFieldValidators;
 
     public function __construct()

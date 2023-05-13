@@ -3,6 +3,7 @@
 namespace App\Response;
 
 use App\Entity\Dumpling;
+use App\Entity\User;
 use App\Interface\StructureResponse;
 
 class DumplingSummary implements StructureResponse
@@ -10,7 +11,7 @@ class DumplingSummary implements StructureResponse
     const KEY_SINGULAR = 'dumpling_summary';
     const KEY_PLURAL = 'dumpling_summaries';
 
-    public string $id;
+    public int $id;
     public string $title;
     public string $subtitle;
     public ?int $createdAt;
@@ -28,7 +29,12 @@ class DumplingSummary implements StructureResponse
         $this->title = $dumpling->getTitle();
         $this->subtitle = $dumpling->getSubtitle();
         $this->createdAt = $dumpling->getCreatedAt()->getTimestamp();
-        $this->{UserSummary::SINGULAR} = $this->userSummary->withUser($dumpling->getUser());
+        return $this;
+    }
+
+    public function withUser(Dumpling $dumpling): self
+    {
+        $this->user_summary = $this->userSummary->withUser($dumpling->getUser());
         return $this;
     }
 }

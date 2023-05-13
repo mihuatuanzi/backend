@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use App\Entity\DumplingMember;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -37,6 +38,17 @@ class DumplingMemberRepository extends ServiceEntityRepository
         if ($flush) {
             $this->getEntityManager()->flush();
         }
+    }
+
+    public function searchByKeywords(?string $keywords, string $alias = 'm'): QueryBuilder
+    {
+        $query = $this->createQueryBuilder($alias);
+        if ($keywords) {
+            $query = $query
+                ->where($query->expr()->like($alias . '.nickname', ':n'))
+                ->setParameter('n', "%$keywords%");
+        }
+        return $query->orderBy($alias . '.id', 'ASC');
     }
 
 //    /**

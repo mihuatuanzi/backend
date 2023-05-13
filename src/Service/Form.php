@@ -4,9 +4,12 @@ namespace App\Service;
 
 use App\Config\FormFieldType;
 use App\Entity\FormField;
+use App\Entity\FormFieldValidator;
+use App\Entity\FormValidator;
 use App\Entity\User;
 use App\Exception\StructuredException;
 use App\Repository\FormFieldRepository;
+use App\Repository\FormFieldValidatorRepository;
 use App\Repository\FormRepository;
 use DateTime;
 use DateTimeImmutable;
@@ -17,17 +20,34 @@ readonly class Form
 {
     public function __construct(
         private FormRepository $formRepository,
-        private FormFieldRepository $fieldRepository
+        private FormFieldRepository $fieldRepository,
+        private FormFieldValidatorRepository $fieldValidatorRepository
     )
     {
     }
 
-    public function bindFormFields(array $fields, \App\Entity\Form $form): void
+    public function bindFormFields(array $fields, \App\Entity\Form $form, ?FormValidator $formValidator): void
     {
         $fieldEntities = $this->fieldRepository->findBy([
             'id' => array_column($fields, 'id'),
             'form' => $form
         ]);
+
+        $fieldValidatorIds = [];
+        foreach ($fields as $field) {
+            if (!empty($field['field_validator']['id'])) {
+                $fieldValidatorIds[] = $field['field_validator']['id'];
+            }
+        }
+
+        $_fieldValidatorEntities = $this->fieldValidatorRepository->findBy([
+            'id' => $fieldValidatorIds
+        ]);
+        $fieldValidatorEntities = [];
+        foreach ($_fieldValidatorEntities as $fieldValidatorEntity) {
+            $fieldValidatorEntities[$fieldValidatorEntity->getId()] = $fieldValidatorEntity;
+        }
+
         $fieldEntities = new ArrayCollection($fieldEntities);
         foreach ($fields as $index => $field) {
             $fieldBag = new ParameterBag($field);
@@ -39,6 +59,18 @@ readonly class Form
             $fieldEntity->loadFromParameterBag($fieldBag)
                 ->setOrderNumber($index)
                 ->setForm($form);
+
+            if ($formValidator && ($validator = $fieldBag->get('field_validator'))) {
+                $fieldValidatorEntity = $fieldValidatorEntities[$validator['id'] ?? null] ?? new FormFieldValidator();
+                $fieldValidatorEntity->setType($validator['type'] ?? null);
+                $fieldValidatorEntity->setRule($validator['rule'] ?? null);
+                $fieldValidatorEntity->setOrderNumber($index);
+                $fieldValidatorEntity->setUpdatedAt(new DateTime());
+                $fieldValidatorEntity->setFormField($fieldEntity);
+                $fieldValidatorEntity->setFormValidator($formValidator);
+                $fieldEntity->addFormFieldValidator($fieldValidatorEntity);
+            }
+
             $form->addFormField($fieldEntity);
         }
     }

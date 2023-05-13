@@ -3,8 +3,13 @@
 namespace App\Entity;
 
 use App\Repository\DumplingMemberRepository;
+use DateTime;
+use DateTimeImmutable;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\HttpFoundation\ParameterBag;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\UniqueConstraint(columns: ['dumpling_id', 'user_id'])]
 #[ORM\Entity(repositoryClass: DumplingMemberRepository::class)]
@@ -23,6 +28,8 @@ class DumplingMember
     #[ORM\JoinColumn(nullable: false)]
     private ?User $user = null;
 
+    #[Assert\NotBlank(message: '值不能为空')]
+    #[Assert\Length(max: 64, maxMessage: '昵称字数过多')]
     #[ORM\Column(length: 64)]
     private ?string $nickname = null;
 
@@ -83,7 +90,7 @@ class DumplingMember
     {
         $roles = $this->roles;
         // guarantee every user at least has ROLE_USER
-        $roles[] = 'ROLE_USER';
+        $roles[] = 'ROLE_MEMBER';
 
         return array_unique($roles);
     }
@@ -128,6 +135,14 @@ class DumplingMember
     {
         $this->updated_at = $updated_at;
 
+        return $this;
+    }
+
+    public function initialProperty(): self
+    {
+        $this->setStatusMask(0);
+        $this->setCreatedAt(new DateTimeImmutable());
+        $this->setUpdatedAt(new DateTime());
         return $this;
     }
 }

@@ -13,8 +13,10 @@ use Doctrine\Persistence\ManagerRegistry;
  * @method FormValidator|null findOneBy(array $criteria, array $orderBy = null)
  * @method FormValidator[]    findAll()
  * @method FormValidator[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ *
+ * @method FormValidator findOneOrNew(array $criteria, array $orderBy = null)
  */
-class FormValidatorRepository extends ServiceEntityRepository
+class FormValidatorRepository extends AbstractRepository
 {
     public function __construct(ManagerRegistry $registry)
     {

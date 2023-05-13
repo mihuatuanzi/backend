@@ -3,12 +3,18 @@
 namespace App\Controller;
 
 use App\Entity\Dumpling;
+use App\Entity\DumplingMember;
 use App\Entity\User;
+use App\Repository\DumplingMemberRepository;
 use App\Repository\DumplingRepository;
 use App\Repository\DumplingRequirementRepository;
 use App\Repository\FormRepository;
+use App\Repository\FormValidatorRepository;
 use App\Repository\UserRepository;
 use App\Response\DumplingSummary;
+use App\Response\ListOf;
+use App\Response\MemberSummary;
+use App\Response\Message;
 use App\Response\Violation;
 use App\Service\Form as FormService;
 use App\Strategy\QueryList;
@@ -18,6 +24,7 @@ use Doctrine\DBAL\Exception;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping\ClassMetadataInfo;
 use Psr\Log\LoggerInterface;
+use ReflectionException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
@@ -36,6 +43,7 @@ class DumplingController extends AbstractController
         DumplingRepository   $dumplingRepository,
         ValidatorInterface   $validator,
         Violation            $violation,
+        Message              $message,
         #[CurrentUser] ?User $user,
     ): JsonResponse
     {
@@ -68,25 +76,21 @@ class DumplingController extends AbstractController
 
         $dumplingRepository->save($dumpling, true);
 
-        return $this->json(['message' => 'Succeed']);
+        return $this->acceptWith($message->with('Succeed'));
     }
 
     /**
      * {@see https://www.doctrine-project.org/projects/doctrine-orm/en/2.14/reference/dql-doctrine-query-language.html#dql-temporarily-change-fetch-mode}
      *
-     * @param Request $request
-     * @param QueryList $queryListStrategy
-     * @param DumplingSummary $summary
-     * @param DumplingRepository $dumplingRepository
-     * @return JsonResponse
+     * @throws ReflectionException
      */
-    #[
-        Route('/dumpling/search', methods: ['GET'])]
+    #[Route('/dumpling/search', methods: ['GET'])]
     public function search(
         Request            $request,
         QueryList          $queryListStrategy,
         DumplingSummary    $summary,
         DumplingRepository $dumplingRepository,
+        ListOf             $listOf,
     ): JsonResponse
     {
         $keywords = $request->get('keywords');
@@ -95,7 +99,8 @@ class DumplingController extends AbstractController
         $list = $builder->getQuery()
             ->setFetchMode(Dumpling::class, 'user', ClassMetadataInfo::FETCH_EAGER)
             ->getResult();
-        return $this->acceptWith(array_map(fn($d) => $summary->withDumpling($d), $list));
+        $summaries = array_map(fn($d) => $summary->withDumpling($d)->withUser($d), $list);
+        return $this->acceptWith($listOf->with($summaries, DumplingSummary::class));
     }
 
     /**
@@ -110,9 +115,11 @@ class DumplingController extends AbstractController
         FormRepository                $formRepository,
         ValidatorInterface            $validator,
         DumplingRepository            $dumplingRepository,
+        FormValidatorRepository       $formValidatorRepository,
         DumplingRequirementRepository $requirementRepository,
         EntityManagerInterface        $em,
         Violation                     $violation,
+        Message                       $message,
         #[CurrentUser] ?User          $user,
     ): JsonResponse
     {
@@ -124,15 +131,24 @@ class DumplingController extends AbstractController
 
         $em->getConnection()->beginTransaction();
         try {
-            $formBag = new ParameterBag($request->get('form'));
-            $form = $formRepository->findOneOrNew(['id' => $formBag->get('id'), 'user' => $user]);
-            $form->loadFromParameterBag($formBag)->setUser($user);
+            $requirement = $requirementRepository->findOneOrNew(['id' => $request->get('id')]);
+            $requirement->loadFromParameterBag($request->request)->setDumpling($dumpling);
 
-            $fields = $formBag->get('fields', []);
-            $formService->bindFormFields($fields, $form);
+            if ($formParam = $request->get('form')) {
+                $formBag = new ParameterBag($formParam);
+                $form = $formRepository->findOneOrNew(['id' => $formBag->get('id'), 'user' => $user]);
+                $form->loadFromParameterBag($formBag)->setUser($user);
 
-            $requirement = $requirementRepository->findOneOrNew(['id' => $request->get('id'), 'form' => $form]);
-            $requirement->loadFromParameterBag($request->request)->setDumpling($dumpling)->setForm($form);
+                $formValidator = null;
+                if ($formBag->get('with_validator')) {
+                    $formValidator = $formValidatorRepository->findOneOrNew(['id' => $formBag->get('validator_id')]);
+                    $formValidator->loadFromParameterBag($formBag)->setUser($user)->setForm($form);
+                }
+
+                $fields = $formBag->get('fields', []);
+                $formService->bindFormFields($fields, $form, $formValidator);
+                $requirement->setForm($form);
+            }
 
             if (($errors = $validator->validate($requirement))->count()) {
                 return $this->acceptWith($violation->withConstraints($errors), 417);
@@ -145,17 +161,90 @@ class DumplingController extends AbstractController
             return $this->acceptWith($violation->withMessages('创建失败，请再次尝试'), 417);
         }
 
-        return $this->json(['message' => 'Succeed']);
+        return $this->acceptWith($message->with('Succeed'));
     }
 
     #[IsGranted('ROLE_USER')]
-    #[Route('/dumpling/join', name: 'app_dumpling_join')]
-    public function join(
-        Request              $request,
-        DumplingRepository   $dumplingRepository,
-        #[CurrentUser] ?User $user,
+    #[Route('/dumpling/join-member', name: 'app_dumpling_join_member', methods: ['POST'])]
+    public function joinMember(
+        Request                  $request,
+        DumplingRepository       $dumplingRepository,
+        DumplingMemberRepository $dumplingMemberRepository,
+        ValidatorInterface       $validator,
+        Violation                $violation,
+        Message                  $message,
+        #[CurrentUser] ?User     $user,
     )
     {
         $dumplingId = $request->get('dumpling_id');
+        $dumpling = $dumplingRepository->findOneBy(['id' => $dumplingId]);
+        if (!$dumpling) {
+            return $this->acceptWith($violation->withMessages('找不到资源'), 404);
+        }
+        $member = (new DumplingMember())->initialProperty();
+        $member->setUser($user);
+        $member->setNickname($user->getNickname());
+        $member->setDumpling($dumpling);
+        if (($errors = $validator->validate($member))->count()) {
+            return $this->acceptWith($violation->withConstraints($errors), 417);
+        }
+
+        $dumplingMemberRepository->save($member, true);
+
+        return $this->acceptWith($message->with('Succeed'));
+    }
+
+    #[IsGranted('ROLE_USER')]
+    #[Route('/dumpling/set-member-nickname', name: 'app_dumpling_set_member_nickname', methods: ['POST'])]
+    public function setMemberNickname(
+        Request                  $request,
+        Message                  $message,
+        Violation                $violation,
+        ValidatorInterface       $validator,
+        DumplingMemberRepository $dumplingMemberRepository,
+        #[CurrentUser] ?User     $user,
+    )
+    {
+        $memberId = $request->get('member_id');
+        $nickname = $request->get('nickname');
+
+        $member = $dumplingMemberRepository->findOneBy(['id' => $memberId]);
+        if (!$member) {
+            return $this->acceptWith($violation->withMessages('找不到资源'), 404);
+        }
+        if ($member->getUser()->getId() !== $user->getId()) {
+            return $this->acceptWith($violation->withMessages('无修改权限'), 403);
+        }
+        $member->setNickname($nickname);
+        $member->setUpdatedAt(new DateTime());
+        if (($errors = $validator->validate($member))->count()) {
+            return $this->acceptWith($violation->withConstraints($errors), 417);
+        }
+        $dumplingMemberRepository->save($member, true);
+
+        return $this->acceptWith($message->with('Succeed'));
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    #[Route('/dumpling/search-members', methods: ['GET'])]
+    public function searchMembers(
+        Request                  $request,
+        QueryList                $queryListStrategy,
+        MemberSummary            $memberSummary,
+        DumplingMemberRepository $dumplingMemberRepository,
+        ListOf                   $listOf,
+    ): JsonResponse
+    {
+        $keywords = $request->get('keywords');
+        $builder = $dumplingMemberRepository->searchByKeywords($keywords);
+        $builder = $queryListStrategy->withRequest($request, $builder);
+        $list = $builder->getQuery()
+            ->setFetchMode(DumplingMember::class, 'user', ClassMetadataInfo::FETCH_EAGER)
+            ->setFetchMode(DumplingMember::class, 'dumpling', ClassMetadataInfo::FETCH_EAGER)
+            ->getResult();
+        $members = array_map(fn($m) => $memberSummary->withMember($m), $list);
+        return $this->acceptWith($listOf->with($members, MemberSummary::class));
     }
 }

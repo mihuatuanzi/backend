@@ -3,7 +3,9 @@
 namespace App\Repository;
 
 use App\Entity\FormField;
+use App\Entity\FormFieldValidator;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\Mapping\ClassMetadataInfo;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -42,6 +44,15 @@ class FormFieldRepository extends ServiceEntityRepository
     public function flush()
     {
         $this->getEntityManager()->flush();
+    }
+
+    public function findByIdsWithValidator(array $ids, $alias = 'ff')
+    {
+        $query = $this->createQueryBuilder($alias);
+        return $query->where($query->expr()->in($alias . '.id', $ids))
+            ->getQuery()
+            ->setFetchMode(FormFieldValidator::class, 'formFieldValidators', ClassMetadataInfo::FETCH_EAGER)
+            ->getResult();
     }
 
 //    /**

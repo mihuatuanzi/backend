@@ -3,10 +3,13 @@
 namespace App\Entity;
 
 use App\Repository\FormValidatorRepository;
+use DateTime;
+use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\HttpFoundation\ParameterBag;
 
 #[ORM\Entity(repositoryClass: FormValidatorRepository::class)]
 class FormValidator
@@ -26,7 +29,7 @@ class FormValidator
     private ?string $remarks = null;
 
     #[ORM\Column]
-    private ?\DateTimeImmutable $created_at = null;
+    private ?DateTimeImmutable $created_at = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private ?\DateTimeInterface $updated_at = null;
@@ -84,12 +87,12 @@ class FormValidator
         return $this;
     }
 
-    public function getCreatedAt(): ?\DateTimeImmutable
+    public function getCreatedAt(): ?DateTimeImmutable
     {
         return $this->created_at;
     }
 
-    public function setCreatedAt(\DateTimeImmutable $created_at): self
+    public function setCreatedAt(DateTimeImmutable $created_at): self
     {
         $this->created_at = $created_at;
 
@@ -147,6 +150,15 @@ class FormValidator
     {
         $this->user = $user;
 
+        return $this;
+    }
+
+    public function loadFromParameterBag(ParameterBag $bag): self
+    {
+        $this->setName($bag->get('title'));
+        $this->setRemarks('');
+        $this->setCreatedAt(new DateTimeImmutable());
+        $this->setUpdatedAt(new DateTime());
         return $this;
     }
 }

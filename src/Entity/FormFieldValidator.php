@@ -3,8 +3,10 @@
 namespace App\Entity;
 
 use App\Repository\FormFieldValidatorRepository;
+use DateTime;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\HttpFoundation\ParameterBag;
 
 #[ORM\Entity(repositoryClass: FormFieldValidatorRepository::class)]
 class FormFieldValidator
@@ -14,7 +16,7 @@ class FormFieldValidator
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(inversedBy: 'formFieldValidators')]
+    #[ORM\ManyToOne(cascade: ['persist', 'remove'], inversedBy: 'formFieldValidators')]
     #[ORM\JoinColumn(nullable: false)]
     private ?FormValidator $form_validator = null;
 
@@ -108,6 +110,14 @@ class FormFieldValidator
     {
         $this->updated_at = $updated_at;
 
+        return $this;
+    }
+
+    public function loadFromParameterBag(ParameterBag $bag): self
+    {
+        $this->setType($bag->get('type'));
+        $this->setRule($bag->get('rule'));
+        $this->setUpdatedAt(new DateTime());
         return $this;
     }
 }
